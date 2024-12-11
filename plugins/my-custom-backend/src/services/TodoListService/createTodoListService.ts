@@ -20,7 +20,12 @@ export async function createTodoListService({
 }): Promise<TodoListService> {
   logger.info('Initializing TodoListService');
 
-  const storedTodos = new Array<TodoItem>();
+  const storedTodos = new Array<TodoItem>({
+    title: 'Create a todo list',
+    id: '1',
+    createdBy: 'pepe',
+    createdAt: '2021-01-01T00:00:00Z',
+  });
 
   return {
     async createTodo(input, options) {
