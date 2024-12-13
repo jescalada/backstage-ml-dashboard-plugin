@@ -4,13 +4,16 @@ import { z } from 'zod';
 import express from 'express';
 import Router from 'express-promise-router';
 import { TodoListService } from './services/TodoListService/types';
+import { MyDatabaseService } from './services/MyDatabaseService/types';
 
 export async function createRouter({
   httpAuth,
   todoListService,
+  myDatabaseService,
 }: {
   httpAuth: HttpAuthService;
   todoListService: TodoListService;
+  myDatabaseService: MyDatabaseService;
 }): Promise<express.Router> {
   const router = Router();
   router.use(express.json());
@@ -40,7 +43,7 @@ export async function createRouter({
   });
 
   router.get('/todos', async (_req, res) => {
-    res.json(await todoListService.listTodos());
+    res.json(await myDatabaseService.getTasks());
   });
 
   router.get('/todos/:id', async (req, res) => {
