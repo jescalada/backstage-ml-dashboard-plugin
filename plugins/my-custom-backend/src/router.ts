@@ -54,5 +54,12 @@ export async function createRouter({
     res.json(await myDatabaseService.getModels());
   });
 
+  router.post('/models/add', async (req, res) => {
+    const { name, version, description, model_uri } = req.body;
+    res.json(
+      await myDatabaseService.addModel(name, version, description, model_uri),
+    );
+  });
+
   return router;
 }

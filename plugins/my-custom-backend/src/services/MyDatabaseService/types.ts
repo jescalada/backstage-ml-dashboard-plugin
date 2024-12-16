@@ -18,4 +18,10 @@ export interface MyDatabaseService {
   getTasks(): Promise<Task[]>;
   addTask(title: string, userId: number, completionTime?: Date): Promise<Task>;
   getModels(): Promise<Model[]>;
+  addModel(
+    name: string,
+    version: string,
+    description: string,
+    modelUri: string,
+  ): Promise<Model>;
 }
