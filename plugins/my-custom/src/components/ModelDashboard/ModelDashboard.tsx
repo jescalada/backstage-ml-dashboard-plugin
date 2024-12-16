@@ -20,6 +20,11 @@ type Model = {
   registered_at: string;
 };
 
+const formatDate = (isoString: string) => {
+  const date = new Date(isoString);
+  return date.toLocaleString();
+};
+
 const ModelTable = ({ models }: { models: Model[] }) => {
   const columns: TableColumn[] = [
     { title: 'Name', field: 'name' },
@@ -29,12 +34,17 @@ const ModelTable = ({ models }: { models: Model[] }) => {
     { title: 'Registered At', field: 'registered_at' },
   ];
 
+  const data = models.map(model => ({
+    ...model,
+    registered_at: formatDate(model.registered_at),
+  }));
+
   return (
     <Table
       title="Model List"
       options={{ search: true, paging: true, pageSize: 10, filtering: true }}
       columns={columns}
-      data={models}
+      data={data}
     />
   );
 };
