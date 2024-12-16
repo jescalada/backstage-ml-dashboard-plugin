@@ -9,7 +9,7 @@ import {
   HeaderLabel,
   SupportButton,
 } from '@backstage/core-components';
-import { ModelDashboard } from '../ModelDashboard/ModelDashboard';
+import { ModelDashboard } from '../ModelDashboard';
 
 export const ExampleComponent = () => (
   <Page themeId="tool">

@@ -50,5 +50,9 @@ export async function createRouter({
     res.json(await todoListService.getTodo({ id: req.params.id }));
   });
 
+  router.get('/models', async (_req, res) => {
+    res.json(await myDatabaseService.getModels());
+  });
+
   return router;
 }

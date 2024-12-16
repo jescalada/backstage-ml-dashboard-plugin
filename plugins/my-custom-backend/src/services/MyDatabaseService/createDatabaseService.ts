@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { Task } from './types';
+import { Model, Task } from './types';
 
 export function createMyDatabaseService(client: Knex) {
   /**
@@ -29,6 +29,21 @@ export function createMyDatabaseService(client: Knex) {
         table.string('name').notNullable();
       });
       await populateUsersTable();
+    }
+  }
+
+  async function ensureModelsTableExists() {
+    const hasTable = await client.schema.hasTable('models');
+    if (!hasTable) {
+      await client.schema.createTable('models', table => {
+        table.increments('id').primary();
+        table.string('name').notNullable();
+        table.string('version').notNullable();
+        table.string('description');
+        table.string('model_uri').notNullable();
+        table.timestamp('registered_at').defaultTo(client.fn.now());
+      });
+      await populateModelsTable();
     }
   }
 
@@ -76,13 +91,38 @@ export function createMyDatabaseService(client: Knex) {
     await client('users').insert(users);
   }
 
+  /**
+   * Populate the models table with some dummy data
+   */
+  async function populateModelsTable() {
+    const models = [
+      {
+        name: 'Model 1',
+        version: '1.0.0',
+        description: 'The first model',
+        model_uri: 'https://example.com/models/model1',
+      },
+      {
+        name: 'Model 2',
+        version: '1.0.0',
+        description: 'The second model',
+        model_uri: 'https://example.com/models/model2',
+      },
+    ];
+
+    await client('models').insert(models);
+  }
+
   ensureUsersTableExists().catch(err => {
     console.error('Error creating users table:', err);
   });
 
-  // Ensure table exists before any queries
   ensureTasksTableExists().catch(err => {
     console.error('Error creating tasks table:', err);
+  });
+
+  ensureModelsTableExists().catch(err => {
+    console.error('Error creating models table:', err);
   });
 
   return {
@@ -114,6 +154,34 @@ export function createMyDatabaseService(client: Knex) {
           title,
           user_id: userId,
           completion_time: completionTime || null,
+        })
+        .returning('*');
+
+      return result;
+    },
+
+    async getModels() {
+      try {
+        const result = await client('models').select('*');
+        return result;
+      } catch (error) {
+        console.log('Failed to fetch models: ', error);
+        return [];
+      }
+    },
+
+    async addModel(
+      name: string,
+      version: string,
+      description: string,
+      modelUri: string,
+    ): Promise<Model> {
+      const [result] = await client('models')
+        .insert({
+          name,
+          version,
+          description,
+          model_uri: modelUri,
         })
         .returning('*');
 
