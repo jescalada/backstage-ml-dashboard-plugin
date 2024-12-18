@@ -9,6 +9,7 @@ import {
   HeaderLabel,
   SupportButton,
 } from '@backstage/core-components';
+import { DataIngestionTracker } from '../DataIngestionTracker';
 import { ModelDashboard } from '../ModelDashboard';
 
 export const ExampleComponent = () => (
@@ -23,17 +24,17 @@ export const ExampleComponent = () => (
       </ContentHeader>
       <Grid container spacing={3} direction="column">
         <Grid item>
-          <InfoCard title="Information card">
-            <Typography variant="body1">
-              All content should be wrapped in a card like this.
-            </Typography>
-            <Typography variant="body2">
-              My Custom plugin is working! 🎉
-            </Typography>
-          </InfoCard>
+          <ModelDashboard />
         </Grid>
         <Grid item>
-          <ModelDashboard />
+          <DataIngestionTracker />
+        </Grid>
+        <Grid item>
+          <InfoCard title="Welcome to the Machine Learning Dashboard">
+            <Typography variant="body1">
+              This is a machine learning dashboard that allows you to view your models and data ingestion jobs.
+            </Typography>
+          </InfoCard>
         </Grid>
       </Grid>
     </Content>
