@@ -14,6 +14,14 @@ export interface Model {
   model_uri: string;
 }
 
+export interface DataIngestionJob {
+  id: number;
+  data_source_uri: string;
+  status: string;
+  created_at: Date;
+  completed_at: Date | null;
+}
+
 export interface MyDatabaseService {
   getTasks(): Promise<Task[]>;
   addTask(title: string, userId: number, completionTime?: Date): Promise<Task>;
@@ -24,4 +32,6 @@ export interface MyDatabaseService {
     description: string,
     modelUri: string,
   ): Promise<Model>;
+  getDataIngestionJobs(): Promise<DataIngestionJob[]>;
+  addDataIngestionJob(data_source_uri: string): Promise<void>;
 }

@@ -61,5 +61,15 @@ export async function createRouter({
     );
   });
 
+  router.get('/jobs', async (_req, res) => {
+    res.json(await myDatabaseService.getDataIngestionJobs());
+  });
+
+  router.post('/jobs/add', async (req, res) => {
+    const { data_source_uri } = req.body;
+    await myDatabaseService.addDataIngestionJob(data_source_uri);
+    res.status(201).send();
+  });
+
   return router;
 }
