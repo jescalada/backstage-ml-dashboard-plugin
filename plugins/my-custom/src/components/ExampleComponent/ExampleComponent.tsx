@@ -19,17 +19,14 @@ export const ExampleComponent = () => (
       <HeaderLabel label="Lifecycle" value="Alpha" />
     </Header>
     <Content>
-      <ContentHeader title="Machine Learning Dashboard">
-        <SupportButton>ML Dashboard</SupportButton>
-      </ContentHeader>
-      <Grid container spacing={3} direction="column">
-        <Grid item>
+      <Grid container spacing={3} direction="row"> {/* Change to "row" */}
+        <Grid item xs={12} sm={6}> {/* Adjust width for smaller screens, 12 (full-width) for xs, 6 (half-width) for sm */}
           <ModelDashboard />
         </Grid>
-        <Grid item>
+        <Grid item xs={12} sm={6}> {/* Same adjustment for the second item */}
           <DataIngestionTracker />
         </Grid>
-        <Grid item>
+        <Grid item xs={12}>
           <InfoCard title="Welcome to the Machine Learning Dashboard">
             <Typography variant="body1">
               This is a machine learning dashboard that allows you to view your models and data ingestion jobs.
