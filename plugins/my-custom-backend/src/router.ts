@@ -71,5 +71,65 @@ export async function createRouter({
     res.status(201).send();
   });
 
+  router.post('/jobs/start/:id', async (req, res) => {
+    const { id } = req.params;
+    const job = await myDatabaseService
+      .getDataIngestionJobs()
+      .then(jobs => jobs.find(j => j.id === Number(id)));
+
+    if (!job) {
+      res.status(404).send({ message: 'Job not found' });
+      return;
+    }
+
+    if (job.status !== 'pending') {
+      res.status(409).send({ message: 'Job not in pending state' });
+      return;
+    }
+
+    await myDatabaseService.startDataIngestionJob(job.id);
+    res.status(204).send();
+  });
+
+  router.post('/jobs/complete/:id', async (req, res) => {
+    const { id } = req.params;
+    const job = await myDatabaseService
+      .getDataIngestionJobs()
+      .then(jobs => jobs.find(j => j.id === Number(id)));
+
+    if (!job) {
+      res.status(404).send({ message: 'Job not found' });
+      return;
+    }
+
+    if (job.status === 'completed' || job.status === 'failed') {
+      res.status(409).send({ message: 'Job already completed or failed' });
+      return;
+    }
+
+    await myDatabaseService.completeDataIngestionJob(job.id);
+    res.status(204).send();
+  });
+
+  router.post('/jobs/fail/:id', async (req, res) => {
+    const { id } = req.params;
+    const job = await myDatabaseService
+      .getDataIngestionJobs()
+      .then(jobs => jobs.find(j => j.id === Number(id)));
+
+    if (!job) {
+      res.status(404).send({ message: 'Job not found' });
+      return;
+    }
+
+    if (job.status === 'completed' || job.status === 'failed') {
+      res.status(409).send({ message: 'Job already completed or failed' });
+      return;
+    }
+
+    await myDatabaseService.failDataIngestionJob(job.id);
+    res.status(204).send();
+  });
+
   return router;
 }

@@ -192,84 +192,143 @@ export function createMyDatabaseService(client: Knex) {
     console.error('Error creating data ingestion jobs table:', err);
   });
 
-  return {
-    async getTasks(): Promise<Task[]> {
-      try {
-        const result = await client('tasks')
-          .select(
-            'tasks.id',
-            'tasks.title',
-            'tasks.user_id',
-            'tasks.completion_time',
-            'users.name AS user_name',
-          )
-          .join('users', 'tasks.user_id', '=', 'users.id');
+    return {
+      async getTasks(): Promise<Task[]> {
+        try {
+          const result = await client('tasks')
+            .select(
+              'tasks.id',
+              'tasks.title',
+              'tasks.user_id',
+              'tasks.completion_time',
+              'users.name AS user_name',
+            )
+            .join('users', 'tasks.user_id', '=', 'users.id');
+          return result;
+        } catch (error) {
+          console.log('Failed to fetch tasks: ', error);
+          return [];
+        }
+      },
+
+      async addTask(
+        title: string,
+        userId: number,
+        completionTime?: Date,
+      ): Promise<Task> {
+        const [result] = await client('tasks')
+          .insert({
+            title,
+            user_id: userId,
+            completion_time: completionTime || null,
+          })
+          .returning('*');
+
         return result;
-      } catch (error) {
-        console.log('Failed to fetch tasks: ', error);
-        return [];
-      }
-    },
+      },
 
-    async addTask(
-      title: string,
-      userId: number,
-      completionTime?: Date,
-    ): Promise<Task> {
-      const [result] = await client('tasks')
-        .insert({
-          title,
-          user_id: userId,
-          completion_time: completionTime || null,
-        })
-        .returning('*');
+      /**
+       * Get all models from the database
+       *
+       * @returns A list of models
+       */
+      async getModels() {
+        try {
+          const result = await client('models').select('*');
+          return result;
+        } catch (error) {
+          console.log('Failed to fetch models: ', error);
+          return [];
+        }
+      },
 
-      return result;
-    },
+      /**
+       * Adds a new model to the database
+       *
+       * @param name The model name
+       * @param version The model version
+       * @param description The model description
+       * @param modelUri The URI of the model
+       * @returns The newly created model
+       */
+      async addModel(
+        name: string,
+        version: string,
+        description: string,
+        modelUri: string,
+      ): Promise<Model> {
+        const [result] = await client('models')
+          .insert({
+            name,
+            version,
+            description,
+            model_uri: modelUri,
+          })
+          .returning('*');
 
-    async getModels() {
-      try {
-        const result = await client('models').select('*');
         return result;
-      } catch (error) {
-        console.log('Failed to fetch models: ', error);
-        return [];
-      }
-    },
+      },
 
-    async addModel(
-      name: string,
-      version: string,
-      description: string,
-      modelUri: string,
-    ): Promise<Model> {
-      const [result] = await client('models')
-        .insert({
-          name,
-          version,
-          description,
-          model_uri: modelUri,
-        })
-        .returning('*');
+      /**
+       * Fetches all data ingestion jobs from the database
+       *
+       * @returns A list of data ingestion jobs
+       */
+      async getDataIngestionJobs() {
+        try {
+          const result = await client('data_ingestion_jobs').select('*');
+          return result;
+        } catch (error) {
+          console.log('Failed to fetch data ingestion jobs: ', error);
+          return [];
+        }
+      },
 
-      return result;
-    },
+      /**
+       * Adds a new data ingestion job to the database
+       *
+       * @param data_source_uri The URI of the data source to ingest
+       */
+      async addDataIngestionJob(data_source_uri: string): Promise<void> {
+        await client('data_ingestion_jobs').insert({
+          data_source_uri,
+          status: 'pending',
+        });
+      },
 
-    async getDataIngestionJobs() {
-      try {
-        const result = await client('data_ingestion_jobs').select('*');
-        return result;
-      } catch (error) {
-        console.log('Failed to fetch data ingestion jobs: ', error);
-        return [];
-      }
-    },
+      /**
+       * Sets the status of a data ingestion job to 'in_progress'
+       *
+       * @param id The ID of the data ingestion job to start
+       */
+      async startDataIngestionJob(id: number): Promise<void> {
+        await client('data_ingestion_jobs').where('id', id).update({
+          status: 'in_progress',
+        });
+      },
 
-    async addDataIngestionJob(data_source_uri: string): Promise<void> {
-      await client('data_ingestion_jobs').insert({
-        data_source_uri,
-        status: 'in_progress',
-      });
-    },
-  };
+      /**
+       * Sets the status of a data ingestion job to 'completed'
+       *
+       * @param id The ID of the data ingestion job to complete
+       */
+      async completeDataIngestionJob(id: number): Promise<void> {
+        await client('data_ingestion_jobs').where('id', id).update({
+          status: 'completed',
+          completed_at: client.fn.now(),
+        });
+      },
+
+      /**
+       * Sets the status of a data ingestion job to 'failed'
+       *
+       * @param id The ID of the data ingestion job to fail
+       */
+      async failDataIngestionJob(id: number): Promise<void> {
+        await client('data_ingestion_jobs').where('id', id).update({
+          status: 'failed',
+          completed_at: client.fn.now(),
+        });
+      },
+
 }
