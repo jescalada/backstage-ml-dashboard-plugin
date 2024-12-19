@@ -60,7 +60,7 @@ The frontend plugin contains all the UI components and routing logic. Right now,
 
 ### Backend (`plugins/my-custom-backend`)
 
-The backend plugin handles business logic, database interaction, and provides REST APIs to be consumed by the frontend.
+The backend plugin handles business logic, database interaction, and provides REST APIs to be consumed by the frontend. The API is automatically running at `localhost:7007` as defined in `app-config.yaml`. 
 
 #### Services:
 - **MyDatabaseService**: Handles database operations, such as fetching and updating data ingestion jobs or model metadata.
