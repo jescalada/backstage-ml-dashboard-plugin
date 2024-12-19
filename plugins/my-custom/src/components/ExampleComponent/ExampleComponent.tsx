@@ -33,7 +33,7 @@ export const ExampleComponent = () => (
         <Grid item xs={12}>
           <InfoCard title="Welcome to the Machine Learning Dashboard">
             <Typography variant="body1">
-              This is a machine learning dashboard that allows you to view your models and data ingestion jobs.
+              This is a machine learning dashboard that allows you to view your models and data ingestion jobs. You can also view the event log to see the latest activities in your ML environment.
             </Typography>
           </InfoCard>
         </Grid>
