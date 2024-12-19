@@ -4,16 +4,19 @@ import { z } from 'zod';
 import express from 'express';
 import Router from 'express-promise-router';
 import { TodoListService } from './services/TodoListService/types';
-import { MyDatabaseService } from './services/MyDatabaseService/types';
+import { MyDatabaseService } from './services/MyDatabaseService';
+import { EventType, MyLoggerService } from './services/MyLoggerService';
 
 export async function createRouter({
   httpAuth,
   todoListService,
   myDatabaseService,
+  myLoggerService,
 }: {
   httpAuth: HttpAuthService;
   todoListService: TodoListService;
   myDatabaseService: MyDatabaseService;
+  myLoggerService: MyLoggerService;
 }): Promise<express.Router> {
   const router = Router();
   router.use(express.json());
@@ -29,6 +32,8 @@ export async function createRouter({
     entityRef: z.string().optional(),
   });
 
+  // TODO: Add Zod schema for each endpoint
+  // TODO: Remove the following example endpoint
   router.post('/todos', async (req, res) => {
     const parsed = todoSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -56,9 +61,18 @@ export async function createRouter({
 
   router.post('/models/add', async (req, res) => {
     const { name, version, description, model_uri } = req.body;
-    res.json(
-      await myDatabaseService.addModel(name, version, description, model_uri),
+    const model = await myDatabaseService.addModel(
+      name,
+      version,
+      description,
+      model_uri,
     );
+    await myLoggerService.logEvent(
+      EventType.MODEL_ADDED,
+      `New model added: ${model.name}`,
+      String(model.id),
+    );
+    res.json(model);
   });
 
   router.get('/jobs', async (_req, res) => {
@@ -67,8 +81,13 @@ export async function createRouter({
 
   router.post('/jobs/add', async (req, res) => {
     const { data_source_uri } = req.body;
-    await myDatabaseService.addDataIngestionJob(data_source_uri);
-    res.status(201).send();
+    const job = await myDatabaseService.addDataIngestionJob(data_source_uri);
+    await myLoggerService.logEvent(
+      EventType.JOB_ADDED,
+      `Job ID ${job.id} was added.`,
+      String(job.id),
+    );
+    res.json(job);
   });
 
   router.post('/jobs/start/:id', async (req, res) => {
@@ -78,17 +97,25 @@ export async function createRouter({
       .then(jobs => jobs.find(j => j.id === Number(id)));
 
     if (!job) {
-      res.status(404).send({ message: 'Job not found' });
+      res.status(404).json({ message: 'Job not found' });
       return;
     }
 
     if (job.status !== 'pending') {
-      res.status(409).send({ message: 'Job not in pending state' });
+      res.status(409).json({ message: 'Job not in pending state' });
       return;
     }
 
     await myDatabaseService.startDataIngestionJob(job.id);
-    res.status(204).send();
+    const message = `Job ID ${job.id} has started.`;
+
+    await myLoggerService.logEvent(
+      EventType.JOB_STARTED,
+      message,
+      String(job.id),
+    );
+
+    res.status(200).json({ message });
   });
 
   router.post('/jobs/complete/:id', async (req, res) => {
@@ -98,17 +125,23 @@ export async function createRouter({
       .then(jobs => jobs.find(j => j.id === Number(id)));
 
     if (!job) {
-      res.status(404).send({ message: 'Job not found' });
+      res.status(404).json({ message: 'Job not found' });
       return;
     }
 
     if (job.status === 'completed' || job.status === 'failed') {
-      res.status(409).send({ message: 'Job already completed or failed' });
+      res.status(409).json({ message: 'Job already completed or failed' });
       return;
     }
 
     await myDatabaseService.completeDataIngestionJob(job.id);
-    res.status(204).send();
+    const message = `Job ID ${job.id} has been completed.`;
+    await myLoggerService.logEvent(
+      EventType.JOB_COMPLETED,
+      message,
+      String(job.id),
+    );
+    res.status(200).json({ message });
   });
 
   router.post('/jobs/fail/:id', async (req, res) => {
@@ -118,17 +151,28 @@ export async function createRouter({
       .then(jobs => jobs.find(j => j.id === Number(id)));
 
     if (!job) {
-      res.status(404).send({ message: 'Job not found' });
+      res.status(404).json({ message: 'Job not found' });
       return;
     }
 
     if (job.status === 'completed' || job.status === 'failed') {
-      res.status(409).send({ message: 'Job already completed or failed' });
+      res.status(409).json({ message: 'Job already completed or failed' });
       return;
     }
 
     await myDatabaseService.failDataIngestionJob(job.id);
-    res.status(204).send();
+    const message = `Job ID ${job.id} has failed.`;
+
+    await myLoggerService.logEvent(
+      EventType.JOB_FAILED,
+      message,
+      String(job.id),
+    );
+    res.status(200).json({ message });
+  });
+
+  router.get('/events', async (_req, res) => {
+    res.json(await myLoggerService.getEvents());
   });
 
   return router;
