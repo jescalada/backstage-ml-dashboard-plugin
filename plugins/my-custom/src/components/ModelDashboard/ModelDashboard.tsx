@@ -63,12 +63,54 @@ const ModelForm = ({ onSubmit }: { onSubmit: (model: Partial<Model>) => Promise<
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, p: 2, border: '1px solid #ccc', borderRadius: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-      <TextField required label="Name" name="name" onChange={handleInputChange} />
-      <TextField required label="Version" name="version" onChange={handleInputChange} />
-      <TextField label="Description" name="description" onChange={handleInputChange} />
-      <TextField required label="Model URI" name="model_uri" onChange={handleInputChange} />
-      <Button type="submit" variant="contained" color="primary">Add Model</Button>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{
+        mt: 2,
+        p: 2,
+        border: '1px solid #ccc',
+        borderRadius: 2,
+        display: 'flex',
+        flexWrap: 'nowrap', // Prevent wrapping
+        alignItems: 'center', // Align items vertically in the center
+      }}
+    >
+      <TextField
+        required
+        label="Name"
+        name="name"
+        onChange={handleInputChange}
+        style={{ flexShrink: 1, minWidth: 100 }}
+      />
+      <TextField
+        required
+        label="Version"
+        name="version"
+        onChange={handleInputChange}
+        style={{ flexShrink: 1, minWidth: 100 }}
+      />
+      <TextField
+        label="Description"
+        name="description"
+        onChange={handleInputChange}
+        style={{ flexShrink: 1, minWidth: 150 }}
+      />
+      <TextField
+        required
+        label="Model URI"
+        name="model_uri"
+        onChange={handleInputChange}
+        style={{ flexShrink: 1, minWidth: 150 }}
+      />
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        style={{ whiteSpace: 'nowrap' }}
+      >
+        Add Model
+      </Button>
     </Box>
   );
 };

@@ -11,6 +11,9 @@ import Button from '@material-ui/core/Button';
 import Box from '@material-ui/core/Box';
 import TextField from '@material-ui/core/TextField';
 import { makeStyles } from '@material-ui/core/styles';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
+
 
 type DataIngestionJob = {
   id: string;
@@ -93,7 +96,13 @@ const useStyles = makeStyles({
     '&:hover': {
       backgroundColor: '#c2c9db', // hover:bg-gray-200
     }
-  }
+  },
+  threeDotButton: {
+    fontSize: '1.5rem',
+    minWidth: 'auto',
+    padding: '0 8px',
+    lineHeight: '1',
+  },
 });
 
 const formatDate = (isoString: string) => {
@@ -123,10 +132,30 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 /**
- * A set of action buttons to switch the status of a job
+ * A set of action buttons to switch the status of a job, hidden behind a "three-dot" menu.
  */
-const StatusSwitchButtons = ({ jobId, switchHandler }: { jobId: string, switchHandler: (jobId: string, status: JobStatus) => void }) => {
+const StatusSwitchButtons = ({
+  jobId,
+  switchHandler
+}: {
+  jobId: string,
+  switchHandler: (jobId: string, status: JobStatus) => void
+}) => {
   const classes = useStyles();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
+
+  const handleStatusChange = (status: JobStatus) => {
+    switchHandler(jobId, status);
+    handleCloseMenu();
+  };
 
   const statusClassMap: Record<string, string> = {
     'Pending': classes.green,
@@ -138,32 +167,43 @@ const StatusSwitchButtons = ({ jobId, switchHandler }: { jobId: string, switchHa
 
   return (
     <>
-      {Object.values(JobStatus).map(status => {
-        if (status === JobStatus.PENDING) return null;
-        const buttonClass = statusClassMap[status] || classes.gray;
-        return (
-          <Button
-            key={status}
-            variant="contained"
-            color="primary"
-            className={`${classes.switchButton} ${buttonClass}`}
-            onClick={() => switchHandler(jobId, status)}
-            size='small'
-          >
-            {status}
-          </Button>
-        );
-      })}
+      <Button
+        className={classes.threeDotButton}
+        onClick={handleOpenMenu}
+        aria-controls="status-menu"
+        aria-haspopup="true"
+      >
+        •••
+      </Button>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+      >
+        {Object.values(JobStatus).map(status => {
+          if (status === JobStatus.PENDING) return null;
+          const buttonClass = statusClassMap[status] || classes.gray;
+          return (
+            <MenuItem
+              key={status}
+              onClick={() => handleStatusChange(status)}
+              className={buttonClass}
+            >
+              {status}
+            </MenuItem>
+          );
+        })}
+      </Menu>
     </>
   );
-}
+};
 
 const JobTable = ({ jobs, handleJobStatusSwitch }: JobTableProps) => {
   const columns: TableColumn<DataIngestionJob>[] = [
-    { title: 'Data Source URI', field: 'data_source_uri', width: '30%' },
+    { title: 'Data Source URI', field: 'data_source_uri', width: '25%' },
     { title: 'Created At', field: 'created_at', width: '20%' },
     { title: 'Completed At', field: 'completed_at', width: '20%' },
-    { title: 'Job Status', field: 'status', render: (job: DataIngestionJob) => <StatusBadge status={job.status} />, width: '10%' },
+    { title: 'Job Status', field: 'status', render: (job: DataIngestionJob) => <StatusBadge status={job.status} />, width: '15%' },
     { title: 'Actions', field: 'id', render: (job: DataIngestionJob) => <StatusSwitchButtons jobId={job.id} switchHandler={handleJobStatusSwitch} />, width: '20%' },
   ];
 
@@ -198,10 +238,37 @@ const ModelForm = ({ onSubmit }: { onSubmit: (model: Partial<DataIngestionJob>) 
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, p: 2, border: '1px solid #ccc', borderRadius: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-      <TextField required label="Data Source URI" name="data_source_uri" onChange={handleInputChange} />
-      <Button type="submit" variant="contained" color="primary">Register Job</Button>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{
+        mt: 2,
+        p: 2,
+        border: '1px solid #ccc',
+        borderRadius: 2,
+        display: 'flex',
+        gap: 2,
+        flexWrap: 'nowrap', // Prevent wrapping
+        alignItems: 'center', // Align items vertically in the center
+      }}
+    >
+      <TextField
+        required
+        label="Data Source URI"
+        name="data_source_uri"
+        onChange={handleInputChange}
+        style={{ flexShrink: 1, minWidth: 200 }} // Adjust width and shrinkability
+      />
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        style={{ whiteSpace: 'nowrap' }} // Prevent button text wrapping
+      >
+        Register Job
+      </Button>
     </Box>
+
   );
 };
 

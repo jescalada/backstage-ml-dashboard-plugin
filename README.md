@@ -2,6 +2,16 @@
 
 This repository contains a custom Backstage plugin, `my-custom`, along with its corresponding backend, `my-custom-backend`. This plugin is designed to integrate with a PostgreSQL database (which may be in a Docker container) and includes functionality for tracking data ingestion jobs, logging ML events, and managing ML model metadata.
 
+**Note:** This is a prototype and not intended for production use. New features/bug fixes will be rolled out as development progresses.
+
+## Screenshots
+
+### Model Dashboard and Data Ingestion Tracker
+![Model Dashboard and Data Ingestion Tracker](plugins/my-custom/img/dashboard-example1.png)
+
+### Event Log
+![Event Log](plugins/my-custom/img/dashboard-example2.png)
+
 ---
 
 ## Getting Started
