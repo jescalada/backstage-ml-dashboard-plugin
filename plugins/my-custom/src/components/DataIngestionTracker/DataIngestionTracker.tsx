@@ -27,6 +27,11 @@ enum JobStatus {
   FAILED = 'Failed',
 }
 
+type JobTableProps = {
+  jobs: DataIngestionJob[];
+  handleJobStatusSwitch: (jobId: string, status: JobStatus) => void;
+}
+
 const useStyles = makeStyles({
   badge: {
     padding: '0.25rem 0.5rem', // equivalent to px-2 py-1
@@ -82,6 +87,13 @@ const useStyles = makeStyles({
     color: '#BE185D', // text-pink-700
     borderColor: '#F472B6', // ring-pink-700/10 (light pink border)
   },
+  switchButton: {
+    width: '100%',
+    marginBottom: '0.5rem',
+    '&:hover': {
+      backgroundColor: '#c2c9db', // hover:bg-gray-200
+    }
+  }
 });
 
 const formatDate = (isoString: string) => {
@@ -110,12 +122,49 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-const JobTable = ({ jobs }: { jobs: DataIngestionJob[] }) => {
+/**
+ * A set of action buttons to switch the status of a job
+ */
+const StatusSwitchButtons = ({ jobId, switchHandler }: { jobId: string, switchHandler: (jobId: string, status: JobStatus) => void }) => {
+  const classes = useStyles();
+
+  const statusClassMap: Record<string, string> = {
+    'Pending': classes.green,
+    'In Progress': classes.yellow,
+    'Completed': classes.purple,
+    'Failed': classes.red,
+    'Unknown': classes.gray,
+  };
+
+  return (
+    <>
+      {Object.values(JobStatus).map(status => {
+        if (status === JobStatus.PENDING) return null;
+        const buttonClass = statusClassMap[status] || classes.gray;
+        return (
+          <Button
+            key={status}
+            variant="contained"
+            color="primary"
+            className={`${classes.switchButton} ${buttonClass}`}
+            onClick={() => switchHandler(jobId, status)}
+            size='small'
+          >
+            {status}
+          </Button>
+        );
+      })}
+    </>
+  );
+}
+
+const JobTable = ({ jobs, handleJobStatusSwitch }: JobTableProps) => {
   const columns: TableColumn<DataIngestionJob>[] = [
-    { title: 'Data Source URI', field: 'data_source_uri', width: '40%' },
+    { title: 'Data Source URI', field: 'data_source_uri', width: '30%' },
     { title: 'Created At', field: 'created_at', width: '20%' },
     { title: 'Completed At', field: 'completed_at', width: '20%' },
-    { title: 'Job Status', field: 'status', render: (job: DataIngestionJob) => <StatusBadge status={job.status} />, width: '20%' },
+    { title: 'Job Status', field: 'status', render: (job: DataIngestionJob) => <StatusBadge status={job.status} />, width: '10%' },
+    { title: 'Actions', field: 'id', render: (job: DataIngestionJob) => <StatusSwitchButtons jobId={job.id} switchHandler={handleJobStatusSwitch} />, width: '20%' },
   ];
 
   const data = jobs.map(job => ({
@@ -193,13 +242,39 @@ export const DataIngestionTracker = () => {
     }
   };
 
+  const handleJobStatusSwitch = async (jobId: string, status: JobStatus) => {
+    const statusToEndpointMap: Record<JobStatus, string> = {
+      [JobStatus.PENDING]: 'pending',
+      [JobStatus.IN_PROGRESS]: 'start',
+      [JobStatus.COMPLETED]: 'complete',
+      [JobStatus.FAILED]: 'fail',
+    };
+
+    try {
+      const url = `${await discoveryApi.getBaseUrl('my-custom')}/jobs/${statusToEndpointMap[status]}/${jobId}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const responseJson = await response.json();
+      if (!response.ok) throw new Error(responseJson.message);
+      alertApi.post({ message: 'Job status updated successfully!', severity: 'success' });
+
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (e: any) {
+      alertApi.post({ message: `Failed to update job status: ${e}`, severity: 'error', display: 'transient' });
+    }
+  };
+
   if (loading) return <Progress />;
   if (error) return <ResponseErrorPanel error={error} />;
 
   return (
     <>
       <ModelForm onSubmit={handleFormSubmit} />
-      <JobTable jobs={jobs || []} />
+      <JobTable jobs={jobs || []} handleJobStatusSwitch={handleJobStatusSwitch} />
     </>
   );
 };
