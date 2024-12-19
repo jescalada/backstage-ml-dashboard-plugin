@@ -11,6 +11,7 @@ import {
 } from '@backstage/core-components';
 import { DataIngestionTracker } from '../DataIngestionTracker';
 import { ModelDashboard } from '../ModelDashboard';
+import { EventLog } from '../EventLog';
 
 export const ExampleComponent = () => (
   <Page themeId="tool">
@@ -25,6 +26,9 @@ export const ExampleComponent = () => (
         </Grid>
         <Grid item xs={12} sm={6}> {/* Same adjustment for the second item */}
           <DataIngestionTracker />
+        </Grid>
+        <Grid item xs={12}>
+          <EventLog />
         </Grid>
         <Grid item xs={12}>
           <InfoCard title="Welcome to the Machine Learning Dashboard">

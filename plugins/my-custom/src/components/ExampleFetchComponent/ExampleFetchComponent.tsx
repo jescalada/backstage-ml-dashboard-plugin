@@ -75,7 +75,6 @@ export const ExampleFetchComponent = () => {
       throw new Error(`Error fetching todos: ${response.statusText} ${await response.text()}`);
     }
     const data = await response.json();
-    console.log('data', data);
     return data;
   }, []);
 

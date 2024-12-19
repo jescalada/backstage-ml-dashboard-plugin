@@ -6,6 +6,7 @@ import { createRouter } from './router';
 import { catalogServiceRef } from '@backstage/plugin-catalog-node/alpha';
 import { createTodoListService } from './services/TodoListService';
 import { createMyDatabaseService } from './services/MyDatabaseService';
+import { createMyLoggerService } from './services/MyLoggerService';
 
 /**
  * myCustomPlugin backend plugin
@@ -34,12 +35,14 @@ export const myCustomPlugin = createBackendPlugin({
         const client = await database.getClient();
 
         const myDatabaseService = createMyDatabaseService(client);
+        const myLoggerService = createMyLoggerService(client);
 
         httpRouter.use(
           await createRouter({
             httpAuth,
             todoListService,
             myDatabaseService,
+            myLoggerService,
           }),
         );
       },
