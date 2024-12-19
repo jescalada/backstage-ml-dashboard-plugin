@@ -14,21 +14,6 @@ export interface Model {
   model_uri: string;
 }
 
-export enum EventType {
-  MODEL_ADDED = 'Model Added',
-  JOB_ADDED = 'Data Ingestion Job Added',
-  JOB_STARTED = 'Data Ingestion Job Started',
-  JOB_COMPLETED = 'Data Ingestion Job Completed',
-  JOB_FAILED = 'Data Ingestion Job Failed',
-}
-
-export interface Event {
-  event_type: EventType;
-  description: string;
-  reference_id: string;
-  created_at: Date;
-}
-
 export interface DataIngestionJob {
   id: number;
   data_source_uri: string;
@@ -48,14 +33,8 @@ export interface MyDatabaseService {
     modelUri: string,
   ): Promise<Model>;
   getDataIngestionJobs(): Promise<DataIngestionJob[]>;
-  addDataIngestionJob(data_source_uri: string): Promise<void>;
+  addDataIngestionJob(data_source_uri: string): Promise<DataIngestionJob>;
   startDataIngestionJob(id: number): Promise<void>;
   completeDataIngestionJob(id: number): Promise<void>;
   failDataIngestionJob(id: number): Promise<void>;
-  getEvents(): Promise<Event[]>;
-  addEvent(
-    eventType: EventType,
-    description: string,
-    referenceId: string,
-  ): Promise<Event>;
 }

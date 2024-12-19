@@ -218,20 +218,18 @@ export const DataIngestionTracker = () => {
       throw new Error(`Error fetching models: ${response.statusText}`);
     }
     const jobs = await response.json();
-    console.log('fetched jobs: ', jobs);
     return jobs;
   }, []);
 
   const handleFormSubmit = async (job: Partial<DataIngestionJob>) => {
     try {
       const url = `${await discoveryApi.getBaseUrl('my-custom')}/jobs/add`;
-      console.log('adding job: ', job);
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(job),
       });
-      if (!response.ok) throw new Error(`Error adding model: ${response.statusText}`);
+      if (!response.ok) throw new Error(`Error adding job: ${response.statusText}`);
       alertApi.post({ message: 'Model added successfully!', severity: 'success' });
 
       // TODO: Refresh only table data

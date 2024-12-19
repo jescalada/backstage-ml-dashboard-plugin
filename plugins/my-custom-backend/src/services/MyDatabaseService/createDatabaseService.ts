@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { EventType, Model, Task } from './types';
+import { DataIngestionJob, EventType, Model, Task } from './types';
 
 /**
  * Create a new instance of the MyDatabaseService
@@ -79,23 +79,6 @@ export function createMyDatabaseService(client: Knex) {
         table.timestamp('completed_at').nullable();
       });
       await populateIngestionJobsTable();
-    }
-  }
-
-  /**
-   * Ensure the events table exists in the database
-   */
-  async function ensureEventsTableExists() {
-    const hasTable = await client.schema.hasTable('events');
-    if (!hasTable) {
-      await client.schema.createTable('events', table => {
-        table.increments('id').primary();
-        table.string('event_type').notNullable();
-        table.string('description');
-        table.integer('reference_id').unsigned();
-        table.timestamp('created_at').defaultTo(client.fn.now());
-      });
-      await populateEventsTable();
     }
   }
 
@@ -193,40 +176,6 @@ export function createMyDatabaseService(client: Knex) {
     await client('data_ingestion_jobs').insert(jobs);
   }
 
-  /**
-   * Populate the events table with some dummy data
-   */
-  async function populateEventsTable() {
-    const events = [
-      {
-        event_type: 'task_completed',
-        description: 'Task "Complete project documentation" completed',
-        reference_id: 1,
-        created_at: new Date('2024-01-15'),
-      },
-      {
-        event_type: 'task_completed',
-        description: 'Task "Write unit tests" completed',
-        reference_id: 5,
-        created_at: new Date('2024-01-05'),
-      },
-      {
-        event_type: 'model_registered',
-        description: 'Model "Model 1" registered',
-        reference_id: 1,
-        created_at: new Date('2024-01-01'),
-      },
-      {
-        event_type: 'model_registered',
-        description: 'Model "Model 2" registered',
-        reference_id: 2,
-        created_at: new Date('2024-01-01'),
-      },
-    ];
-
-    await client('events').insert(events);
-  }
-
   ensureUsersTableExists().catch(err => {
     console.error('Error creating users table:', err);
   });
@@ -241,10 +190,6 @@ export function createMyDatabaseService(client: Knex) {
 
   ensureIngestionJobsTableExists().catch(err => {
     console.error('Error creating data ingestion jobs table:', err);
-  });
-
-  ensureEventsTableExists().catch(err => {
-    console.error('Error creating events table:', err);
   });
 
   return {
@@ -344,11 +289,16 @@ export function createMyDatabaseService(client: Knex) {
      *
      * @param data_source_uri The URI of the data source to ingest
      */
-    async addDataIngestionJob(data_source_uri: string): Promise<void> {
-      await client('data_ingestion_jobs').insert({
-        data_source_uri,
-        status: 'pending',
-      });
+    async addDataIngestionJob(
+      data_source_uri: string,
+    ): Promise<DataIngestionJob> {
+      const [result] = await client('data_ingestion_jobs')
+        .insert({
+          data_source_uri,
+          status: 'pending',
+        })
+        .returning('*');
+      return result;
     },
 
     /**
@@ -383,40 +333,6 @@ export function createMyDatabaseService(client: Knex) {
       await client('data_ingestion_jobs').where('id', id).update({
         status: 'failed',
         completed_at: client.fn.now(),
-      });
-    },
-
-    /**
-     * Fetches all events from the database
-     *
-     * @returns A list of events
-     */
-    async getEvents() {
-      try {
-        const result = await client('events').select('*');
-        return result;
-      } catch (error) {
-        console.log('Failed to fetch events: ', error);
-        return [];
-      }
-    },
-
-    /**
-     * Adds a new event to the database
-     *
-     * @param eventType The type of event
-     * @param description The event description
-     * @param referenceId The ID of the referenced entity
-     */
-    async addEvent(
-      eventType: EventType,
-      description: string,
-      referenceId: number,
-    ): Promise<void> {
-      await client('events').insert({
-        event_type: eventType,
-        description,
-        reference_id: referenceId,
       });
     },
   };
