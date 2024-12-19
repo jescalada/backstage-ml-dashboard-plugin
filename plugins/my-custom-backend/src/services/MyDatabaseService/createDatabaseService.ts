@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { Model, Task } from './types';
+import { EventType, Model, Task } from './types';
 
 /**
  * Create a new instance of the MyDatabaseService
@@ -79,6 +79,23 @@ export function createMyDatabaseService(client: Knex) {
         table.timestamp('completed_at').nullable();
       });
       await populateIngestionJobsTable();
+    }
+  }
+
+  /**
+   * Ensure the events table exists in the database
+   */
+  async function ensureEventsTableExists() {
+    const hasTable = await client.schema.hasTable('events');
+    if (!hasTable) {
+      await client.schema.createTable('events', table => {
+        table.increments('id').primary();
+        table.string('event_type').notNullable();
+        table.string('description');
+        table.integer('reference_id').unsigned();
+        table.timestamp('created_at').defaultTo(client.fn.now());
+      });
+      await populateEventsTable();
     }
   }
 
@@ -176,6 +193,40 @@ export function createMyDatabaseService(client: Knex) {
     await client('data_ingestion_jobs').insert(jobs);
   }
 
+  /**
+   * Populate the events table with some dummy data
+   */
+  async function populateEventsTable() {
+    const events = [
+      {
+        event_type: 'task_completed',
+        description: 'Task "Complete project documentation" completed',
+        reference_id: 1,
+        created_at: new Date('2024-01-15'),
+      },
+      {
+        event_type: 'task_completed',
+        description: 'Task "Write unit tests" completed',
+        reference_id: 5,
+        created_at: new Date('2024-01-05'),
+      },
+      {
+        event_type: 'model_registered',
+        description: 'Model "Model 1" registered',
+        reference_id: 1,
+        created_at: new Date('2024-01-01'),
+      },
+      {
+        event_type: 'model_registered',
+        description: 'Model "Model 2" registered',
+        reference_id: 2,
+        created_at: new Date('2024-01-01'),
+      },
+    ];
+
+    await client('events').insert(events);
+  }
+
   ensureUsersTableExists().catch(err => {
     console.error('Error creating users table:', err);
   });
@@ -192,143 +243,181 @@ export function createMyDatabaseService(client: Knex) {
     console.error('Error creating data ingestion jobs table:', err);
   });
 
-    return {
-      async getTasks(): Promise<Task[]> {
-        try {
-          const result = await client('tasks')
-            .select(
-              'tasks.id',
-              'tasks.title',
-              'tasks.user_id',
-              'tasks.completion_time',
-              'users.name AS user_name',
-            )
-            .join('users', 'tasks.user_id', '=', 'users.id');
-          return result;
-        } catch (error) {
-          console.log('Failed to fetch tasks: ', error);
-          return [];
-        }
-      },
+  ensureEventsTableExists().catch(err => {
+    console.error('Error creating events table:', err);
+  });
 
-      async addTask(
-        title: string,
-        userId: number,
-        completionTime?: Date,
-      ): Promise<Task> {
-        const [result] = await client('tasks')
-          .insert({
-            title,
-            user_id: userId,
-            completion_time: completionTime || null,
-          })
-          .returning('*');
-
+  return {
+    async getTasks(): Promise<Task[]> {
+      try {
+        const result = await client('tasks')
+          .select(
+            'tasks.id',
+            'tasks.title',
+            'tasks.user_id',
+            'tasks.completion_time',
+            'users.name AS user_name',
+          )
+          .join('users', 'tasks.user_id', '=', 'users.id');
         return result;
-      },
+      } catch (error) {
+        console.log('Failed to fetch tasks: ', error);
+        return [];
+      }
+    },
 
-      /**
-       * Get all models from the database
-       *
-       * @returns A list of models
-       */
-      async getModels() {
-        try {
-          const result = await client('models').select('*');
-          return result;
-        } catch (error) {
-          console.log('Failed to fetch models: ', error);
-          return [];
-        }
-      },
+    async addTask(
+      title: string,
+      userId: number,
+      completionTime?: Date,
+    ): Promise<Task> {
+      const [result] = await client('tasks')
+        .insert({
+          title,
+          user_id: userId,
+          completion_time: completionTime || null,
+        })
+        .returning('*');
 
-      /**
-       * Adds a new model to the database
-       *
-       * @param name The model name
-       * @param version The model version
-       * @param description The model description
-       * @param modelUri The URI of the model
-       * @returns The newly created model
-       */
-      async addModel(
-        name: string,
-        version: string,
-        description: string,
-        modelUri: string,
-      ): Promise<Model> {
-        const [result] = await client('models')
-          .insert({
-            name,
-            version,
-            description,
-            model_uri: modelUri,
-          })
-          .returning('*');
+      return result;
+    },
 
+    /**
+     * Get all models from the database
+     *
+     * @returns A list of models
+     */
+    async getModels() {
+      try {
+        const result = await client('models').select('*');
         return result;
-      },
+      } catch (error) {
+        console.log('Failed to fetch models: ', error);
+        return [];
+      }
+    },
 
-      /**
-       * Fetches all data ingestion jobs from the database
-       *
-       * @returns A list of data ingestion jobs
-       */
-      async getDataIngestionJobs() {
-        try {
-          const result = await client('data_ingestion_jobs').select('*');
-          return result;
-        } catch (error) {
-          console.log('Failed to fetch data ingestion jobs: ', error);
-          return [];
-        }
-      },
+    /**
+     * Adds a new model to the database
+     *
+     * @param name The model name
+     * @param version The model version
+     * @param description The model description
+     * @param modelUri The URI of the model
+     * @returns The newly created model
+     */
+    async addModel(
+      name: string,
+      version: string,
+      description: string,
+      modelUri: string,
+    ): Promise<Model> {
+      const [result] = await client('models')
+        .insert({
+          name,
+          version,
+          description,
+          model_uri: modelUri,
+        })
+        .returning('*');
 
-      /**
-       * Adds a new data ingestion job to the database
-       *
-       * @param data_source_uri The URI of the data source to ingest
-       */
-      async addDataIngestionJob(data_source_uri: string): Promise<void> {
-        await client('data_ingestion_jobs').insert({
-          data_source_uri,
-          status: 'pending',
-        });
-      },
+      return result;
+    },
 
-      /**
-       * Sets the status of a data ingestion job to 'in_progress'
-       *
-       * @param id The ID of the data ingestion job to start
-       */
-      async startDataIngestionJob(id: number): Promise<void> {
-        await client('data_ingestion_jobs').where('id', id).update({
-          status: 'in_progress',
-        });
-      },
+    /**
+     * Fetches all data ingestion jobs from the database
+     *
+     * @returns A list of data ingestion jobs
+     */
+    async getDataIngestionJobs() {
+      try {
+        const result = await client('data_ingestion_jobs').select('*');
+        return result;
+      } catch (error) {
+        console.log('Failed to fetch data ingestion jobs: ', error);
+        return [];
+      }
+    },
 
-      /**
-       * Sets the status of a data ingestion job to 'completed'
-       *
-       * @param id The ID of the data ingestion job to complete
-       */
-      async completeDataIngestionJob(id: number): Promise<void> {
-        await client('data_ingestion_jobs').where('id', id).update({
-          status: 'completed',
-          completed_at: client.fn.now(),
-        });
-      },
+    /**
+     * Adds a new data ingestion job to the database
+     *
+     * @param data_source_uri The URI of the data source to ingest
+     */
+    async addDataIngestionJob(data_source_uri: string): Promise<void> {
+      await client('data_ingestion_jobs').insert({
+        data_source_uri,
+        status: 'pending',
+      });
+    },
 
-      /**
-       * Sets the status of a data ingestion job to 'failed'
-       *
-       * @param id The ID of the data ingestion job to fail
-       */
-      async failDataIngestionJob(id: number): Promise<void> {
-        await client('data_ingestion_jobs').where('id', id).update({
-          status: 'failed',
-          completed_at: client.fn.now(),
-        });
-      },
+    /**
+     * Sets the status of a data ingestion job to 'in_progress'
+     *
+     * @param id The ID of the data ingestion job to start
+     */
+    async startDataIngestionJob(id: number): Promise<void> {
+      await client('data_ingestion_jobs').where('id', id).update({
+        status: 'in_progress',
+      });
+    },
 
+    /**
+     * Sets the status of a data ingestion job to 'completed'
+     *
+     * @param id The ID of the data ingestion job to complete
+     */
+    async completeDataIngestionJob(id: number): Promise<void> {
+      await client('data_ingestion_jobs').where('id', id).update({
+        status: 'completed',
+        completed_at: client.fn.now(),
+      });
+    },
+
+    /**
+     * Sets the status of a data ingestion job to 'failed'
+     *
+     * @param id The ID of the data ingestion job to fail
+     */
+    async failDataIngestionJob(id: number): Promise<void> {
+      await client('data_ingestion_jobs').where('id', id).update({
+        status: 'failed',
+        completed_at: client.fn.now(),
+      });
+    },
+
+    /**
+     * Fetches all events from the database
+     *
+     * @returns A list of events
+     */
+    async getEvents() {
+      try {
+        const result = await client('events').select('*');
+        return result;
+      } catch (error) {
+        console.log('Failed to fetch events: ', error);
+        return [];
+      }
+    },
+
+    /**
+     * Adds a new event to the database
+     *
+     * @param eventType The type of event
+     * @param description The event description
+     * @param referenceId The ID of the referenced entity
+     */
+    async addEvent(
+      eventType: EventType,
+      description: string,
+      referenceId: number,
+    ): Promise<void> {
+      await client('events').insert({
+        event_type: eventType,
+        description,
+        reference_id: referenceId,
+      });
+    },
+  };
 }
