@@ -122,7 +122,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     'Unknown': classes.gray,
   };
 
-  const badgeClass = statusClassMap[status] || classes.secondary;
+  const badgeClass = statusClassMap[status] || classes.gray;
 
   return (
     <span className={`${classes.badge} ${badgeClass}`}>
@@ -247,7 +247,6 @@ const ModelForm = ({ onSubmit }: { onSubmit: (model: Partial<DataIngestionJob>) 
         border: '1px solid #ccc',
         borderRadius: 2,
         display: 'flex',
-        gap: 2,
         flexWrap: 'nowrap', // Prevent wrapping
         alignItems: 'center', // Align items vertically in the center
       }}
@@ -284,8 +283,8 @@ export const DataIngestionTracker = () => {
     if (!response.ok) {
       throw new Error(`Error fetching models: ${response.statusText}`);
     }
-    const jobs = await response.json();
-    return jobs;
+    const fetchedJobs = await response.json();
+    return fetchedJobs;
   }, []);
 
   const handleFormSubmit = async (job: Partial<DataIngestionJob>) => {

@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { DataIngestionJob, EventType, Model, Task } from './types';
+import { DataIngestionJob, Model, Task } from './types';
 
 /**
  * Create a new instance of the MyDatabaseService
@@ -60,6 +60,7 @@ export function createMyDatabaseService(client: Knex) {
         table.string('description');
         table.string('model_uri').notNullable();
         table.timestamp('registered_at').defaultTo(client.fn.now());
+        table.string('registered_by').nullable();
       });
       await populateModelsTable();
     }
@@ -136,12 +137,14 @@ export function createMyDatabaseService(client: Knex) {
         version: '1.0.0',
         description: 'The first model',
         model_uri: 'https://example.com/models/model1',
+        registered_by: 'Alice',
       },
       {
         name: 'Model 2',
         version: '1.0.0',
         description: 'The second model',
         model_uri: 'https://example.com/models/model2',
+        registered_by: 'Bob',
       },
     ];
 
@@ -256,6 +259,7 @@ export function createMyDatabaseService(client: Knex) {
       version: string,
       description: string,
       modelUri: string,
+      registeredBy: string | null = null,
     ): Promise<Model> {
       const [result] = await client('models')
         .insert({
@@ -263,6 +267,7 @@ export function createMyDatabaseService(client: Knex) {
           version,
           description,
           model_uri: modelUri,
+          registered_by: registeredBy,
         })
         .returning('*');
 

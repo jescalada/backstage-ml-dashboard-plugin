@@ -6,7 +6,7 @@ import {
   ResponseErrorPanel,
 } from '@backstage/core-components';
 import useAsync from 'react-use/lib/useAsync';
-import { alertApiRef, discoveryApiRef, fetchApiRef, useApi } from '@backstage/core-plugin-api';
+import { alertApiRef, discoveryApiRef, fetchApiRef, identityApiRef, useApi } from '@backstage/core-plugin-api';
 import Button from '@material-ui/core/Button';
 import Box from '@material-ui/core/Box';
 import TextField from '@material-ui/core/TextField';
@@ -18,6 +18,7 @@ type Model = {
   description: string;
   model_uri: string;
   registered_at: string;
+  registered_by: string | null;
 };
 
 const formatDate = (isoString: string) => {
@@ -32,6 +33,7 @@ const ModelTable = ({ models }: { models: Model[] }) => {
     { title: 'Description', field: 'description' },
     { title: 'Model URI', field: 'model_uri' },
     { title: 'Registered At', field: 'registered_at' },
+    { title: 'Registered By', field: 'registered_by' },
   ];
 
   const data = models.map(model => ({
@@ -119,6 +121,7 @@ export const ModelDashboard = () => {
   const discoveryApi = useApi(discoveryApiRef);
   const { fetch } = useApi(fetchApiRef);
   const alertApi = useApi(alertApiRef);
+  const identityApi = useApi(identityApiRef);
 
   const { value: models, loading, error } = useAsync(async (): Promise<Model[]> => {
     const url = `${await discoveryApi.getBaseUrl('my-custom')}/models`;
@@ -131,18 +134,20 @@ export const ModelDashboard = () => {
 
   const handleFormSubmit = async (model: Partial<Model>) => {
     try {
+      const user = await identityApi.getBackstageIdentity();
+      const username = user.userEntityRef;
+
       const url = `${await discoveryApi.getBaseUrl('my-custom')}/models/add`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(model),
+        body: JSON.stringify({ ...model, registered_by: username }), // Include the user's email
       });
       if (!response.ok) throw new Error(`Error adding model: ${response.statusText}`);
       alertApi.post({ message: 'Model added successfully!', severity: 'success' });
 
       // TODO: Refresh only table data
-      // Refresh page after adding model and short delay
-      setTimeout(() => window.location.reload(), 1000);
+      setTimeout(() => window.location.reload(), 1000); // Refresh page after short delay
     } catch (e: any) {
       alertApi.post({ message: `Failed to add model: ${e.message}`, severity: 'error' });
     }

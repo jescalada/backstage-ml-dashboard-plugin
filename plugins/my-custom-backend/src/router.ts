@@ -60,12 +60,13 @@ export async function createRouter({
   });
 
   router.post('/models/add', async (req, res) => {
-    const { name, version, description, model_uri } = req.body;
+    const { name, version, description, model_uri, registered_by } = req.body;
     const model = await myDatabaseService.addModel(
       name,
       version,
       description,
       model_uri,
+      registered_by,
     );
     await myLoggerService.logEvent(
       EventType.MODEL_ADDED,

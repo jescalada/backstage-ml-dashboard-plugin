@@ -31,6 +31,7 @@ export interface MyDatabaseService {
     version: string,
     description: string,
     modelUri: string,
+    registeredBy: string | null,
   ): Promise<Model>;
   getDataIngestionJobs(): Promise<DataIngestionJob[]>;
   addDataIngestionJob(data_source_uri: string): Promise<DataIngestionJob>;
