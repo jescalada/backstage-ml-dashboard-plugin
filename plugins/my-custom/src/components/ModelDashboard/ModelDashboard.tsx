@@ -27,13 +27,26 @@ const formatDate = (isoString: string) => {
 };
 
 const ModelTable = ({ models }: { models: Model[] }) => {
-  const columns: TableColumn[] = [
+  const columns: TableColumn<Model>[] = [
     { title: 'Name', field: 'name' },
     { title: 'Version', field: 'version' },
     { title: 'Description', field: 'description' },
     { title: 'Model URI', field: 'model_uri' },
     { title: 'Registered At', field: 'registered_at' },
-    { title: 'Registered By', field: 'registered_by' },
+    {
+      title: 'Registered By',
+      field: 'registered_by',
+      render: model => (
+        <a
+          href={`/profile/${model.registered_by}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none', color: '#1976d2' }}
+        >
+          {model.registered_by}
+        </a>
+      ),
+    },
   ];
 
   const data = models.map(model => ({
