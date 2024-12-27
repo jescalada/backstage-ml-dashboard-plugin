@@ -36,16 +36,23 @@ const ModelTable = ({ models }: { models: Model[] }) => {
     {
       title: 'Registered By',
       field: 'registered_by',
-      render: model => (
-        <a
-          href={`/profile/${model.registered_by}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ textDecoration: 'none', color: '#1976d2' }}
-        >
-          {model.registered_by}
-        </a>
-      ),
+      render: model => {
+        const userId = model.registered_by ?? 'user:default/unknown'; // Default to unknown user
+        // Extract the entity and namespace using string manipulation
+        const [, namespace, user] = userId.split(/[:/]/); // Splits "user:default/jescalada" into parts
+        const url = `http://localhost:3000/catalog/${namespace}/user/${user}`;
+
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none', color: '#1976d2' }}
+          >
+            {user}
+          </a>
+        );
+      },
     },
   ];
 
