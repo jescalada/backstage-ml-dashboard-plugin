@@ -57,6 +57,7 @@
   },
   "packageManager": "yarn@4.4.1",
   "dependencies": {
+    "@backstage/plugin-auth-backend": "^0.24.1",
     "pg": "^8.13.1"
   }
 }
