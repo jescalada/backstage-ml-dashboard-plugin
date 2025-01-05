@@ -22,3 +22,17 @@ metadata:
   name: jescalada
 spec:
   memberOf: [guests]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: juane
+  annotations:
+    google.com/email: juanescalada175@gmail.com
+spec:
+  profile:
+    displayName: Juan E.
+    email: juanescalada175@gmail.com
+    picture: https://example.com/your-profile-picture.png
+  memberOf: # Optional; groups the user belongs to
+    - team-example
