@@ -71,6 +71,7 @@ techdocs:
   publisher:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
+# NOTE: The secrets are hardcoded in this file for demonstration purposes.
 auth:
   # see https://backstage.io/docs/auth/ to learn about auth providers
   environment: development
@@ -86,6 +87,15 @@ auth:
             # Matches the GitHub username with the Backstage user entity name.
             # See https://backstage.io/docs/auth/github/provider#resolvers for more resolvers.
             - resolver: usernameMatchingUserEntityName
+    google:
+      development:
+        clientId: 1009968223893-u92qq6itk7ej5008o4174gjubs5lhorg.apps.googleusercontent.com
+        clientSecret: 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
+        signIn:
+          resolvers:
+            # Matches the Google email with the Backstage user entity name.
+            # See https://backstage.io/docs/auth/google/provider#resolvers for more resolvers.
+            - resolver: emailMatchingUserEntityAnnotation
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options

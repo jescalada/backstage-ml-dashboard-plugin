@@ -29,6 +29,7 @@ backend.add(
 );
 backend.add(import('@backstage/plugin-auth-backend-module-github-provider'));
 
+backend.add(import('@backstage/plugin-auth-backend-module-google-provider'));
 // See https://backstage.io/docs/features/software-catalog/configuration#subscribing-to-catalog-errors
 backend.add(import('@backstage/plugin-catalog-backend-module-logs'));
 
