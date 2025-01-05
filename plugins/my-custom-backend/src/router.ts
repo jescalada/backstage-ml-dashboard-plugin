@@ -6,17 +6,20 @@ import Router from 'express-promise-router';
 import { TodoListService } from './services/TodoListService/types';
 import { MyDatabaseService } from './services/MyDatabaseService';
 import { EventType, MyLoggerService } from './services/MyLoggerService';
+import { ArgoService } from './services/ArgoService/createArgoService';
 
 export async function createRouter({
   httpAuth,
   todoListService,
   myDatabaseService,
   myLoggerService,
+  argoService,
 }: {
   httpAuth: HttpAuthService;
   todoListService: TodoListService;
   myDatabaseService: MyDatabaseService;
   myLoggerService: MyLoggerService;
+  argoService: ArgoService;
 }): Promise<express.Router> {
   const router = Router();
   router.use(express.json());
@@ -174,6 +177,26 @@ export async function createRouter({
 
   router.get('/events', async (_req, res) => {
     res.json(await myLoggerService.getEvents());
+  });
+
+  router.get('/argo/applications', async (req, res) => {
+    try {
+      // TODO: Get bearer token to pass to ArgoService
+      const applications = await argoService.fetchApplications();
+      res.json(applications);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.post('argo/sync/:appName', async (req, res) => {
+    try {
+      const appName = req.params.appName;
+      const result = await argoService.triggerSync(appName);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   return router;

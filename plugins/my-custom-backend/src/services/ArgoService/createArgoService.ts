@@ -22,7 +22,7 @@ export class ArgoService {
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+      headers.Authorization = `Bearer ${this.token}`;
     }
     return headers;
   }
