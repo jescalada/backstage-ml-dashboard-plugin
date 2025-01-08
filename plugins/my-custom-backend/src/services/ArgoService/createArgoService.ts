@@ -1,8 +1,8 @@
 import fetch, { RequestInit } from 'node-fetch';
+import https from 'https';
 
 interface ArgoServiceConfig {
   baseUrl: string;
-  token?: string; // Bearer token for auth
 }
 
 /**
@@ -12,25 +12,26 @@ interface ArgoServiceConfig {
  */
 export class ArgoService {
   private baseUrl: string;
-  private token?: string;
 
   constructor(config: ArgoServiceConfig) {
     this.baseUrl = config.baseUrl;
-    this.token = config.token;
   }
 
-  private getHeaders(): HeadersInit {
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
-    }
-    return headers;
+  private getHeaders(token: string): HeadersInit {
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
   }
 
-  async fetchApplications(): Promise<any> {
+  async fetchApplications(token: string): Promise<any> {
+    const dangerouslyAllowSelfSignedCertsAgent = new https.Agent({
+      rejectUnauthorized: false, // This allows self-signed certs. DO NOT USE IN PRODUCTION
+    });
     const response = await fetch(`${this.baseUrl}/api/v1/applications`, {
       method: 'GET',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(token),
+      agent: dangerouslyAllowSelfSignedCertsAgent,
     });
 
     if (!response.ok) {
@@ -39,12 +40,12 @@ export class ArgoService {
     return response.json();
   }
 
-  async triggerSync(appName: string): Promise<any> {
+  async triggerSync(appName: string, token: string): Promise<any> {
     const response = await fetch(
       `${this.baseUrl}/api/v1/applications/${appName}/sync`,
       {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: this.getHeaders(token),
       },
     );
 
