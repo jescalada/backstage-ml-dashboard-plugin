@@ -12,6 +12,7 @@ import {
 import { DataIngestionTracker } from '../DataIngestionTracker';
 import { ModelDashboard } from '../ModelDashboard';
 import { EventLog } from '../EventLog';
+import { ArgoAppFetcher } from '../ArgoDashboard/ArgoDashboard';
 
 export const ExampleComponent = () => (
   <Page themeId="tool">
@@ -36,6 +37,9 @@ export const ExampleComponent = () => (
               This is a machine learning dashboard that allows you to view your models and data ingestion jobs. You can also view the event log to see the latest activities in your ML environment.
             </Typography>
           </InfoCard>
+        </Grid>
+        <Grid item xs={12}>
+          <ArgoAppFetcher />
         </Grid>
       </Grid>
     </Content>
