@@ -7,6 +7,7 @@ import { TodoListService } from './services/TodoListService/types';
 import { MyDatabaseService } from './services/MyDatabaseService';
 import { EventType, MyLoggerService } from './services/MyLoggerService';
 import { ArgoService } from './services/ArgoService/createArgoService';
+import { getRootLogger } from '@backstage/backend-common';
 
 export async function createRouter({
   httpAuth,
@@ -23,6 +24,8 @@ export async function createRouter({
 }): Promise<express.Router> {
   const router = Router();
   router.use(express.json());
+
+  const logger = getRootLogger();
 
   // TEMPLATE NOTE:
   // Zod is a powerful library for data validation and recommended in particular
@@ -179,20 +182,34 @@ export async function createRouter({
     res.json(await myLoggerService.getEvents());
   });
 
-  router.get('/argo/applications', async (req, res) => {
+  router.post('/argo/applications', async (req, res) => {
     try {
-      // TODO: Get bearer token to pass to ArgoService
-      const applications = await argoService.fetchApplications();
+      // Get token from body
+      const { token } = req.body;
+      logger.info('ArgoCD Token:', token);
+      if (!token) {
+        res.status(401).json({ error: req.body });
+        return;
+      }
+
+      const applications = await argoService.fetchApplications(token);
       res.json(applications);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  router.post('argo/sync/:appName', async (req, res) => {
+  router.post('/argo/sync/:appName', async (req, res) => {
     try {
+      const token = req.headers.authorization?.split(' ')[1];
+      logger.info('ArgoCD Token:', token);
+      if (!token) {
+        res.status(401).json({ error: 'Unauthorized: Missing token' });
+        return;
+      }
+
       const appName = req.params.appName;
-      const result = await argoService.triggerSync(appName);
+      const result = await argoService.triggerSync(appName, token);
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
