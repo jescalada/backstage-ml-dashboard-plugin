@@ -1,13 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { discoveryApiRef, googleAuthApiRef, useApi, fetchApiRef } from '@backstage/core-plugin-api';
 import { Table, TableColumn } from '@backstage/core-components';
+import { useTableStyles } from '../../styles/useTableStyles';
 
 interface ArgoApplication {
   name: string;
   namespace: string;
-  status: string;
   createdAt: string;
-  syncStatus: string;
+  health: ArgoApplicationHealthStatus;
+  syncStatus: ArgoApplicationSyncStatus;
+}
+
+enum ArgoApplicationSyncStatus {
+  Synced = 'Synced',
+  OutOfSync = 'OutOfSync',
+  Unknown = 'Unknown',
+}
+
+enum ArgoApplicationHealthStatus {
+  Healthy = 'Healthy',
+  Degraded = 'Degraded',
+  Progressing = 'Progressing',
+  Suspended = 'Suspended',
+  Missing = 'Missing',
+  Unknown = 'Unknown',
 }
 
 const extractArgoApplications = (data: any): ArgoApplication[] => {
@@ -24,7 +40,6 @@ const extractArgoApplications = (data: any): ArgoApplication[] => {
     return {
       name: name || "Unknown",
       namespace: namespace || "Unknown",
-      status: sync?.status || "Unknown",
       createdAt: creationTimestamp || "Unknown",
       health: health?.status || "Unknown",
       syncStatus: sync?.status || "Unknown",
@@ -32,12 +47,51 @@ const extractArgoApplications = (data: any): ArgoApplication[] => {
   });
 }
 
+const SyncStatusBadge = ({ status }: { status: string }) => {
+  const classes = useTableStyles();
+
+  const statusClassMap: Record<string, string> = {
+    'Synced': classes.green,
+    'OutOfSync': classes.yellow,
+    'Unknown': classes.gray,
+  };
+
+  const badgeClass = statusClassMap[status] || classes.gray;
+
+  return (
+    <span className={`${classes.badge} ${badgeClass}`}>
+      {status}
+    </span>
+  );
+};
+
+const HealthStatusBadge = ({ status }: { status: string }) => {
+  const classes = useTableStyles();
+
+  const statusClassMap: Record<string, string> = {
+    'Healthy': classes.green,
+    'Degraded': classes.red,
+    'Progressing': classes.blue,
+    'Suspended': classes.gray,
+    'Missing': classes.yellow,
+    'Unknown': classes.gray,
+  };
+
+  const badgeClass = statusClassMap[status] || classes.gray;
+
+  return (
+    <span className={`${classes.badge} ${badgeClass}`}>
+      {status}
+    </span>
+  );
+}
+
 const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication[] }) => {
   const columns: TableColumn<ArgoApplication>[] = [
     { title: 'Name', field: 'name' },
     { title: 'Namespace', field: 'namespace' },
-    { title: 'Status', field: 'status' },
-    { title: 'Sync Status', field: 'syncStatus' },
+    { title: 'Sync Status', field: 'syncStatus', render: app => <SyncStatusBadge status={app.syncStatus} /> },
+    { title: 'Health', field: 'health', render: app => <HealthStatusBadge status={app.health} /> },
     { title: 'Created At', field: 'createdAt' },
   ];
 
