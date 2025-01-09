@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { discoveryApiRef, googleAuthApiRef, useApi, fetchApiRef } from '@backstage/core-plugin-api';
 import { Table, TableColumn } from '@backstage/core-components';
 
@@ -8,6 +8,28 @@ interface ArgoApplication {
   status: string;
   createdAt: string;
   syncStatus: string;
+}
+
+const extractArgoApplications = (data: any): ArgoApplication[] => {
+  if (!data || !Array.isArray(data.items)) {
+    throw new Error("Invalid data format");
+  }
+
+  return data.items.map((item: any) => {
+    const {
+      metadata: { name, namespace, creationTimestamp },
+      status: { health, sync },
+    } = item;
+
+    return {
+      name: name || "Unknown",
+      namespace: namespace || "Unknown",
+      status: sync?.status || "Unknown",
+      createdAt: creationTimestamp || "Unknown",
+      health: health?.status || "Unknown",
+      syncStatus: sync?.status || "Unknown",
+    };
+  });
 }
 
 const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication[] }) => {
@@ -50,9 +72,7 @@ export const ArgoAppFetcher = () => {
     try {
       const url = `${await discoveryApi.getBaseUrl('my-custom')}/argo/applications`;
       const token = await googleAuth.getIdToken();
-      console.log('Google Access Token:', token);
 
-      // backend request to fetch ArgoCD applications
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -64,10 +84,8 @@ export const ArgoAppFetcher = () => {
       if (!response.ok) {
         throw new Error(`Failed to fetch ArgoCD applications: ${response.statusText}`);
       }
-      console.log('ArgoCD Applications Response:', response);
       const data = await response.json();
-      console.log('ArgoCD Applications:', data);
-      setApplications(data);
+      setApplications(extractArgoApplications(data));
     } catch (err: any) {
       console.error('Error fetching ArgoCD applications:', err);
       setError(err.message || 'Unknown error occurred');
@@ -76,11 +94,13 @@ export const ArgoAppFetcher = () => {
     }
   };
 
+  useEffect(() => {
+    fetchArgoApplications();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div>
-      <button onClick={fetchArgoApplications} disabled={loading}>
-        {loading ? 'Fetching Applications...' : 'Fetch Argo Applications'}
-      </button>
+      {loading && <p>Loading applications...</p>}
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
       {applications.length > 0 ? (
         <ArgoApplicationsTable applications={applications} />
