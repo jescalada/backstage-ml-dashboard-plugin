@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { discoveryApiRef, googleAuthApiRef, useApi, fetchApiRef } from '@backstage/core-plugin-api';
 import { Table, TableColumn } from '@backstage/core-components';
 import { useTableStyles } from '../../styles/useTableStyles';
+import Button from '@material-ui/core/Button';
+import Box from '@material-ui/core/Box';
+import TextField from '@material-ui/core/TextField';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 
 interface ArgoApplication {
   name: string;
@@ -27,6 +32,10 @@ enum ArgoApplicationHealthStatus {
   Suspended = 'Suspended',
   Missing = 'Missing',
   Unknown = 'Unknown',
+}
+
+enum ArgoApplicationAction {
+  Sync = 'Sync',
 }
 
 const extractArgoApplications = (data: any): ArgoApplication[] => {
@@ -92,6 +101,65 @@ const HealthStatusBadge = ({ status }: { status: string }) => {
   );
 }
 
+const AppActionButtons = ({
+  appName,
+  actionHandler
+}: {
+  appName: string,
+  actionHandler: (appName: string, action: ArgoApplicationAction) => void
+}) => {
+  const classes = useTableStyles();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
+
+  const handleAction = (action: ArgoApplicationAction) => {
+    actionHandler(appName, action);
+    handleCloseMenu();
+  };
+
+  const actionClassMap: Record<string, string> = {
+    'Sync': classes.blue,
+  };
+
+  return (
+    <>
+      <Button
+        className={classes.threeDotButton}
+        onClick={handleOpenMenu}
+        aria-controls="status-menu"
+        aria-haspopup="true"
+      >
+        •••
+      </Button>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+      >
+        {Object.values(ArgoApplicationAction).map(action => {
+          const buttonClass = actionClassMap[action] || classes.gray;
+          return (
+            <MenuItem
+              key={action}
+              onClick={() => handleAction(action)}
+              className={buttonClass}
+            >
+              {action}
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </>
+  );
+};
+
 const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication[] }) => {
   const columns: TableColumn<ArgoApplication>[] = [
     { title: 'Name', field: 'name' },
@@ -102,6 +170,16 @@ const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication
     { title: 'Last Synced At', field: 'lastSyncedAt' },
     { title: 'Sync Status', field: 'syncStatus', render: app => <SyncStatusBadge status={app.syncStatus} /> },
     { title: 'Health', field: 'health', render: app => <HealthStatusBadge status={app.health} /> },
+    {
+      title: 'Actions',
+      field: 'name',
+      render: app => (
+        <AppActionButtons
+          appName={app.name}
+          actionHandler={(appName, action) => console.log(`Triggering action ${action} for app ${appName}`)}
+        />
+      ),
+    },
   ];
 
   const data = applications.map(app => ({
