@@ -7,13 +7,16 @@ interface ArgoApplication {
   name: string;
   namespace: string;
   createdAt: string;
+  lastDeployedAt?: string;
+  lastDeployedBy?: string;
+  lastSyncedAt?: string;
   health: ArgoApplicationHealthStatus;
   syncStatus: ArgoApplicationSyncStatus;
 }
 
 enum ArgoApplicationSyncStatus {
   Synced = 'Synced',
-  OutOfSync = 'OutOfSync',
+  'OutOfSync' = 'OutOfSync',
   Unknown = 'Unknown',
 }
 
@@ -34,13 +37,16 @@ const extractArgoApplications = (data: any): ArgoApplication[] => {
   return data.items.map((item: any) => {
     const {
       metadata: { name, namespace, creationTimestamp },
-      status: { health, sync },
+      status: { health, history, reconciledAt, sync },
     } = item;
 
     return {
       name: name || "Unknown",
       namespace: namespace || "Unknown",
       createdAt: creationTimestamp || "Unknown",
+      lastDeployedAt: history[history.length - 1].deployedAt || "Unknown",
+      lastDeployedBy: history[history.length - 1].initiatedBy.username || "Unknown",
+      lastSyncedAt: reconciledAt || "Unknown",
       health: health?.status || "Unknown",
       syncStatus: sync?.status || "Unknown",
     };
@@ -90,14 +96,19 @@ const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication
   const columns: TableColumn<ArgoApplication>[] = [
     { title: 'Name', field: 'name' },
     { title: 'Namespace', field: 'namespace' },
+    { title: 'Created At', field: 'createdAt' },
+    { title: 'Last Deployed At', field: 'lastDeployedAt' },
+    { title: 'Last Deployed By', field: 'lastDeployedBy' },
+    { title: 'Last Synced At', field: 'lastSyncedAt' },
     { title: 'Sync Status', field: 'syncStatus', render: app => <SyncStatusBadge status={app.syncStatus} /> },
     { title: 'Health', field: 'health', render: app => <HealthStatusBadge status={app.health} /> },
-    { title: 'Created At', field: 'createdAt' },
   ];
 
   const data = applications.map(app => ({
     ...app,
-    createdAt: new Date(app.createdAt).toLocaleString(), // Format the creation date
+    createdAt: new Date(app.createdAt).toLocaleString(),
+    lastDeployedAt: new Date(app.lastDeployedAt ?? '').toLocaleString(),
+    lastSyncedAt: new Date(app.lastSyncedAt ?? '').toLocaleString(),
   }));
 
   return (
@@ -139,6 +150,7 @@ export const ArgoAppFetcher = () => {
         throw new Error(`Failed to fetch ArgoCD applications: ${response.statusText}`);
       }
       const data = await response.json();
+      console.log('Argo raw data:', data);
       setApplications(extractArgoApplications(data));
     } catch (err: any) {
       console.error('Error fetching ArgoCD applications:', err);
