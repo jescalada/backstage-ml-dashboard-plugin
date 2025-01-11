@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { discoveryApiRef, googleAuthApiRef, useApi, fetchApiRef } from '@backstage/core-plugin-api';
+import { discoveryApiRef, googleAuthApiRef, useApi, fetchApiRef, alertApiRef } from '@backstage/core-plugin-api';
 import { Table, TableColumn } from '@backstage/core-components';
 import { useTableStyles } from '../../styles/useTableStyles';
 import Button from '@material-ui/core/Button';
@@ -7,8 +7,10 @@ import Box from '@material-ui/core/Box';
 import TextField from '@material-ui/core/TextField';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
+import Tooltip from '@material-ui/core/Tooltip';
+import Typography from '@material-ui/core/Typography';
 
-interface ArgoApplication {
+type ArgoApplication = {
   name: string;
   namespace: string;
   createdAt: string;
@@ -17,7 +19,14 @@ interface ArgoApplication {
   lastSyncedAt?: string;
   health: ArgoApplicationHealthStatus;
   syncStatus: ArgoApplicationSyncStatus;
+  lastSyncResult: ArgoApplicationSyncResultStatus;
+  lastSyncMessage?: string;
 }
+
+type ArgoApplicationTableProps = {
+  applications: ArgoApplication[];
+  handleAction: (appName: string, action: ArgoApplicationAction) => void;
+};
 
 enum ArgoApplicationSyncStatus {
   Synced = 'Synced',
@@ -34,6 +43,12 @@ enum ArgoApplicationHealthStatus {
   Unknown = 'Unknown',
 }
 
+enum ArgoApplicationSyncResultStatus {
+  Succeeded = 'Succeeded',
+  Failed = 'Failed',
+  Unknown = 'Unknown',
+}
+
 enum ArgoApplicationAction {
   Sync = 'Sync',
 }
@@ -46,7 +61,7 @@ const extractArgoApplications = (data: any): ArgoApplication[] => {
   return data.items.map((item: any) => {
     const {
       metadata: { name, namespace, creationTimestamp },
-      status: { health, history, reconciledAt, sync },
+      status: { health, history, operationState, reconciledAt, sync },
     } = item;
 
     return {
@@ -58,6 +73,8 @@ const extractArgoApplications = (data: any): ArgoApplication[] => {
       lastSyncedAt: reconciledAt || "Unknown",
       health: health?.status || "Unknown",
       syncStatus: sync?.status || "Unknown",
+      lastSyncResult: operationState.phase || "Unknown",
+      lastSyncMessage: operationState.syncResult.resources[0].message || undefined,
     };
   });
 }
@@ -100,6 +117,51 @@ const HealthStatusBadge = ({ status }: { status: string }) => {
     </span>
   );
 }
+
+const LastSyncResultBadge = ({ result, message }: { result: string; message?: string }) => {
+  const classes = useTableStyles();
+
+  const statusClassMap: Record<string, string> = {
+    Succeeded: classes.green,
+    Failed: classes.red,
+    Unknown: classes.gray,
+  };
+
+  const badgeClass = statusClassMap[result] || classes.gray;
+
+  return (
+    <Box display="inline-flex" alignItems="center">
+      <span className={`${classes.badge} ${badgeClass}`}>{result}</span>
+      {message && (
+        <Tooltip title={message} arrow>
+          <Box
+            sx={{
+              width: 16,
+              height: 16,
+              borderRadius: '50%',
+              backgroundColor: '#222',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              marginLeft: 4,
+            }}
+          >
+            <Typography
+              style={{
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 'bold',
+              }}
+            >
+              ?
+            </Typography>
+          </Box>
+        </Tooltip>
+      )}
+    </Box>
+  );
+};
 
 const AppActionButtons = ({
   appName,
@@ -160,7 +222,7 @@ const AppActionButtons = ({
   );
 };
 
-const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication[] }) => {
+const ArgoApplicationsTable = ({ applications, handleAction }: ArgoApplicationTableProps) => {
   const columns: TableColumn<ArgoApplication>[] = [
     { title: 'Name', field: 'name' },
     { title: 'Namespace', field: 'namespace' },
@@ -170,13 +232,14 @@ const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication
     { title: 'Last Synced At', field: 'lastSyncedAt' },
     { title: 'Sync Status', field: 'syncStatus', render: app => <SyncStatusBadge status={app.syncStatus} /> },
     { title: 'Health', field: 'health', render: app => <HealthStatusBadge status={app.health} /> },
+    { title: 'Last Sync Result', field: 'lastSyncResult', render: app => <LastSyncResultBadge result={app.lastSyncResult} message={app.lastSyncMessage} /> },
     {
       title: 'Actions',
       field: 'name',
       render: app => (
         <AppActionButtons
           appName={app.name}
-          actionHandler={(appName, action) => console.log(`Triggering action ${action} for app ${appName}`)}
+          actionHandler={handleAction}
         />
       ),
     },
@@ -202,11 +265,12 @@ const ArgoApplicationsTable = ({ applications }: { applications: ArgoApplication
 export const ArgoAppFetcher = () => {
   const googleAuth = useApi(googleAuthApiRef);
   const { fetch } = useApi(fetchApiRef);
+  const alertApi = useApi(alertApiRef);
+  const discoveryApi = useApi(discoveryApiRef);
+
   const [applications, setApplications] = useState<ArgoApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const discoveryApi = useApi(discoveryApiRef);
 
   const fetchArgoApplications = async () => {
     setLoading(true);
