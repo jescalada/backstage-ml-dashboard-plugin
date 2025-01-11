@@ -238,6 +238,32 @@ export const ArgoAppFetcher = () => {
     }
   };
 
+  const handleAction = async (appName: string, action: ArgoApplicationAction) => {
+    const actionToEndpointMap: Record<ArgoApplicationAction, string> = {
+      [ArgoApplicationAction.Sync]: 'sync',
+    };
+
+    try {
+      const url = `${await discoveryApi.getBaseUrl('my-custom')}/argo/applications/${appName}/${actionToEndpointMap[action]}`;
+      const token = await googleAuth.getIdToken();
+      console.log('Triggering action:', url);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      if (!response.ok) throw new Error(response.statusText);
+
+      alertApi.post({ message: `Syncing ${appName}...`, severity: 'success' });
+
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (e: any) {
+      alertApi.post({ message: `Failed to start syncing ${appName}: ${e}`, severity: 'error', display: 'transient' });
+    }
+  };
+
   useEffect(() => {
     fetchArgoApplications();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -247,7 +273,7 @@ export const ArgoAppFetcher = () => {
       {loading && <p>Loading applications...</p>}
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
       {applications.length > 0 ? (
-        <ArgoApplicationsTable applications={applications} />
+        <ArgoApplicationsTable applications={applications} handleAction={handleAction} />
       ) : (
         !loading && <p>No applications to display</p>
       )}

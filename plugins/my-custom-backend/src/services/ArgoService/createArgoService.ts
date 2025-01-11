@@ -13,6 +13,10 @@ interface ArgoServiceConfig {
 export class ArgoService {
   private baseUrl: string;
 
+  private dangerouslyAllowSelfSignedCertsAgent: https.Agent = new https.Agent({
+    rejectUnauthorized: false, // This allows self-signed certs. DO NOT USE IN PRODUCTION
+  });
+
   constructor(config: ArgoServiceConfig) {
     this.baseUrl = config.baseUrl;
   }
@@ -25,13 +29,10 @@ export class ArgoService {
   }
 
   async fetchApplications(token: string): Promise<any> {
-    const dangerouslyAllowSelfSignedCertsAgent = new https.Agent({
-      rejectUnauthorized: false, // This allows self-signed certs. DO NOT USE IN PRODUCTION
-    });
     const response = await fetch(`${this.baseUrl}/api/v1/applications`, {
       method: 'GET',
       headers: this.getHeaders(token),
-      agent: dangerouslyAllowSelfSignedCertsAgent,
+      agent: this.dangerouslyAllowSelfSignedCertsAgent,
     });
 
     if (!response.ok) {
@@ -46,11 +47,12 @@ export class ArgoService {
       {
         method: 'POST',
         headers: this.getHeaders(token),
+        agent: this.dangerouslyAllowSelfSignedCertsAgent,
       },
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to sync application: ${response.statusText}`);
+      throw new Error(`Failed to sync ${appName}: ${response.statusText}`);
     }
     return response.json();
   }

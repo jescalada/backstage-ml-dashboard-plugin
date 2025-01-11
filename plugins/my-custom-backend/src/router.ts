@@ -184,9 +184,7 @@ export async function createRouter({
 
   router.post('/argo/applications', async (req, res) => {
     try {
-      // Get token from body
       const { token } = req.body;
-      logger.info('ArgoCD Token:', token);
       if (!token) {
         res.status(401).json({ error: req.body });
         return;
@@ -199,10 +197,9 @@ export async function createRouter({
     }
   });
 
-  router.post('/argo/sync/:appName', async (req, res) => {
+  router.post('/argo/applications/:appName/sync', async (req, res) => {
     try {
-      const token = req.headers.authorization?.split(' ')[1];
-      logger.info('ArgoCD Token:', token);
+      const { token } = req.body;
       if (!token) {
         res.status(401).json({ error: 'Unauthorized: Missing token' });
         return;
