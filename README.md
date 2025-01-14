@@ -2,6 +2,8 @@
 
 This repository contains a custom Backstage plugin, `my-custom`, along with its corresponding backend, `my-custom-backend`. This plugin is designed to integrate with a PostgreSQL database (which may be in a Docker container) and includes functionality for tracking data ingestion jobs, logging ML events, and managing ML model metadata.
 
+It also allows for ArgoCD integration to display the status of your models deployed in Kubernetes.
+
 **Note:** This is a prototype and not intended for production use. New features/bug fixes will be rolled out as development progresses.
 
 ## Screenshots
@@ -11,6 +13,9 @@ This repository contains a custom Backstage plugin, `my-custom`, along with its 
 
 ### Event Log
 ![Event Log](plugins/my-custom/img/dashboard-example2.png)
+
+### ArgoCD Dashboard
+![ArgoCD Dashboard](plugins/my-custom/img/argo-dashboard.png)
 
 ---
 
@@ -43,17 +48,22 @@ backend:
 The frontend plugin contains all the UI components and routing logic. Right now, there are no extra routes or pages. Everything is accessible from http://localhost:3000/my-custom assuming you are running the Backstage instance locally.
 
 #### Components:
+- **ArgoDashboard**: Displays the status of models deployed in Kubernetes using ArgoCD.
+  - Fetches data from the ArgoCD API to display the status of deployments.
+  - Authenticates with the ArgoCD API via the Backstage login (in this case, Google OAuth).
+  - Allows syncing deployments directly through Backstage.
+  - Allows viewing the reason for failed syncs.
 - **DataIngestionTracker**: Tracks and displays the status of data ingestion jobs. Interacts with the backend to fetch job details and change job status.
   - Has a form that allows "uploading" a job by adding its string URI to the DB.
   - Each job can be started, completed, or failed.
 - **EventLog**: A dashboard to view a chronological log of events, such as job status changes or model updates.
   - Events are fetched from the backend and displayed in a list.
   - Events are logged in the backend using the `MyLoggerService`.
-- **ExampleComponent**: A placeholder/example component showcasing how to build a new UI component.
-  - Right now, this is the main component displayed on the dashboard when accessing `/my-custom`.
 - **ExampleFetchComponent**: Demonstrates how to fetch data from the backend using the `discoveryApi`.
   - Dummy component that fetches a list of to-do items from the backend. Will remove in the future.
   - Demonstrates how to use authentication to access backend services.
+- **MLDashboardPage**: The main page for the plugin, containing the Model Dashboard and Data Ingestion Tracker.
+  - Displays the Model Dashboard, Data Ingestion Tracker and Event Log components.
 - **ModelDashboard**: Displays metadata about machine learning models, such as their current status, version, and linked data ingestion jobs.
   - Currently allows uploading model URIs to the DB and viewing the list of models.
   - **TODO: Integrate with a model registry/tracker.**
@@ -109,6 +119,11 @@ The backend plugin handles business logic, database interaction, and provides RE
 ### 3. **Event Logging**
 - Track any user-triggered actions (job status changes, model updates, etc.).
 - View events in a chronological order in the `EventLog` table (may be refactored into a more visually appealing format).
+
+### 4. **ArgoCD Integration**
+- Display the status of models deployed in Kubernetes using ArgoCD, including deployment status, health, version and more.
+- Allow syncing deployments directly through Backstage.
+- View the reason for failed syncs.
 
 ---
 
