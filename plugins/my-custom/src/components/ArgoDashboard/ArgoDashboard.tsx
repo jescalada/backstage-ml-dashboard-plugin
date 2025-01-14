@@ -4,55 +4,22 @@ import { Table, TableColumn } from '@backstage/core-components';
 import { useTableStyles } from '../../styles/useTableStyles';
 import Button from '@material-ui/core/Button';
 import Box from '@material-ui/core/Box';
-import TextField from '@material-ui/core/TextField';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
+import {
+  AppActionButtonsProps,
+  ArgoApplication,
+  ArgoApplicationAction,
+  ArgoApplicationTableProps,
+} from './types';
 
-type ArgoApplication = {
-  name: string;
-  namespace: string;
-  createdAt: string;
-  lastDeployedAt?: string;
-  lastDeployedBy?: string;
-  lastSyncedAt?: string;
-  health: ArgoApplicationHealthStatus;
-  syncStatus: ArgoApplicationSyncStatus;
-  lastSyncResult: ArgoApplicationSyncResultStatus;
-  lastSyncMessage?: string;
-}
-
-type ArgoApplicationTableProps = {
-  applications: ArgoApplication[];
-  handleAction: (appName: string, action: ArgoApplicationAction) => void;
-};
-
-enum ArgoApplicationSyncStatus {
-  Synced = 'Synced',
-  'OutOfSync' = 'OutOfSync',
-  Unknown = 'Unknown',
-}
-
-enum ArgoApplicationHealthStatus {
-  Healthy = 'Healthy',
-  Degraded = 'Degraded',
-  Progressing = 'Progressing',
-  Suspended = 'Suspended',
-  Missing = 'Missing',
-  Unknown = 'Unknown',
-}
-
-enum ArgoApplicationSyncResultStatus {
-  Succeeded = 'Succeeded',
-  Failed = 'Failed',
-  Unknown = 'Unknown',
-}
-
-enum ArgoApplicationAction {
-  Sync = 'Sync',
-}
-
+/**
+ * Extracts ArgoCD applications from the raw data returned by the API 
+ * @param data Raw data returned by the API
+ * @returns parsed ArgoApplication objects
+ */
 const extractArgoApplications = (data: any): ArgoApplication[] => {
   if (!data || !Array.isArray(data.items)) {
     throw new Error("Invalid data format");
@@ -79,15 +46,17 @@ const extractArgoApplications = (data: any): ArgoApplication[] => {
   });
 }
 
+/**
+ * Badge component that displays the colour-coded sync status of an ArgoCD application
+ * @param status Sync status of the application
+ */
 const SyncStatusBadge = ({ status }: { status: string }) => {
   const classes = useTableStyles();
-
   const statusClassMap: Record<string, string> = {
     'Synced': classes.green,
     'OutOfSync': classes.yellow,
     'Unknown': classes.gray,
   };
-
   const badgeClass = statusClassMap[status] || classes.gray;
 
   return (
@@ -97,9 +66,12 @@ const SyncStatusBadge = ({ status }: { status: string }) => {
   );
 };
 
+/**
+ * Badge component that displays the colour-coded health status of an ArgoCD application
+ * @param status Health status of the application
+ */
 const HealthStatusBadge = ({ status }: { status: string }) => {
   const classes = useTableStyles();
-
   const statusClassMap: Record<string, string> = {
     'Healthy': classes.green,
     'Degraded': classes.red,
@@ -108,7 +80,6 @@ const HealthStatusBadge = ({ status }: { status: string }) => {
     'Missing': classes.yellow,
     'Unknown': classes.gray,
   };
-
   const badgeClass = statusClassMap[status] || classes.gray;
 
   return (
@@ -118,15 +89,18 @@ const HealthStatusBadge = ({ status }: { status: string }) => {
   );
 }
 
+/**
+ * Badge component that displays the colour-coded result of the last sync operation of an ArgoCD application
+ * @param result Last sync result of the application
+ * @param message Optional message to display on hover (usually on error)
+ */
 const LastSyncResultBadge = ({ result, message }: { result: string; message?: string }) => {
   const classes = useTableStyles();
-
   const statusClassMap: Record<string, string> = {
     Succeeded: classes.green,
     Failed: classes.red,
     Unknown: classes.gray,
   };
-
   const badgeClass = statusClassMap[result] || classes.gray;
 
   return (
@@ -163,13 +137,15 @@ const LastSyncResultBadge = ({ result, message }: { result: string; message?: st
   );
 };
 
+/**
+ * Component that displays a set of action buttons to operate on an ArgoCD application
+ * @param appName Name of the application
+ * @param actionHandler Function to handle the action
+ */
 const AppActionButtons = ({
   appName,
   actionHandler
-}: {
-  appName: string,
-  actionHandler: (appName: string, action: ArgoApplicationAction) => void
-}) => {
+}: AppActionButtonsProps) => {
   const classes = useTableStyles();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -222,6 +198,11 @@ const AppActionButtons = ({
   );
 };
 
+/**
+ * Table component that displays all ArgoCD applications available to the authenticated user
+ * @param applications List of ArgoCD applications
+ * @param handleAction Function to handle actions on an application (such as syncing)
+ */
 const ArgoApplicationsTable = ({ applications, handleAction }: ArgoApplicationTableProps) => {
   const columns: TableColumn<ArgoApplication>[] = [
     { title: 'Name', field: 'name' },
@@ -262,6 +243,9 @@ const ArgoApplicationsTable = ({ applications, handleAction }: ArgoApplicationTa
   );
 };
 
+/**
+ * Component that fetches ArgoCD applications and displays them in a table
+ */
 export const ArgoAppFetcher = () => {
   const googleAuth = useApi(googleAuthApiRef);
   const { fetch } = useApi(fetchApiRef);
@@ -270,11 +254,14 @@ export const ArgoAppFetcher = () => {
 
   const [applications, setApplications] = useState<ArgoApplication[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Fetches ArgoCD applications from the backend
+   * @returns List of ArgoCD applications
+   * @throws Error if fetching fails
+   */
   const fetchArgoApplications = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       const url = `${await discoveryApi.getBaseUrl('my-custom')}/argo/applications`;
@@ -292,16 +279,20 @@ export const ArgoAppFetcher = () => {
         throw new Error(`Failed to fetch ArgoCD applications: ${response.statusText}`);
       }
       const data = await response.json();
-      console.log('Argo raw data:', data);
       setApplications(extractArgoApplications(data));
     } catch (err: any) {
-      console.error('Error fetching ArgoCD applications:', err);
-      setError(err.message || 'Unknown error occurred');
+      alertApi.post({ message: `${err}`, severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Handles an action on an ArgoCD application
+   * @param appName Name of the application
+   * @param action Action to perform
+   * @error Displays an error message if the action fails
+   */
   const handleAction = async (appName: string, action: ArgoApplicationAction) => {
     const actionToEndpointMap: Record<ArgoApplicationAction, string> = {
       [ArgoApplicationAction.Sync]: 'sync',
@@ -310,7 +301,6 @@ export const ArgoAppFetcher = () => {
     try {
       const url = `${await discoveryApi.getBaseUrl('my-custom')}/argo/applications/${appName}/${actionToEndpointMap[action]}`;
       const token = await googleAuth.getIdToken();
-      console.log('Triggering action:', url);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -335,7 +325,6 @@ export const ArgoAppFetcher = () => {
   return (
     <div>
       {loading && <p>Loading applications...</p>}
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
       {applications.length > 0 ? (
         <ArgoApplicationsTable applications={applications} handleAction={handleAction} />
       ) : (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Table,
   TableColumn,
@@ -32,6 +32,10 @@ const formatDate = (isoString: string) => {
   return date.toLocaleString();
 };
 
+/**
+ * A table component to display a list of events.
+ * @param events The list of events to display
+ */
 const EventTable = ({ events }: EventTableProps) => {
   const columns: TableColumn<Event>[] = [
     { title: 'Event Type', field: 'event_type' },
@@ -55,6 +59,9 @@ const EventTable = ({ events }: EventTableProps) => {
   );
 };
 
+/**
+ * A component to display a list of events in a table.
+ */
 export const EventLog = () => {
   const discoveryApi = useApi(discoveryApiRef);
   const { fetch } = useApi(fetchApiRef);

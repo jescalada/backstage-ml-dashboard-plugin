@@ -21,11 +21,20 @@ type Model = {
   registered_by: string | null;
 };
 
+/**
+ * A utility function to format an ISO string to a human-readable date.
+ * @param isoString The ISO string to format
+ * @returns A human-readable date string
+ */
 const formatDate = (isoString: string) => {
   const date = new Date(isoString);
   return date.toLocaleString();
 };
 
+/**
+ * A table component to display a list of models.
+ * @param models The list of models to display
+ */
 const ModelTable = ({ models }: { models: Model[] }) => {
   const columns: TableColumn<Model>[] = [
     { title: 'Name', field: 'name' },
@@ -71,6 +80,10 @@ const ModelTable = ({ models }: { models: Model[] }) => {
   );
 };
 
+/**
+ * A form component to add a new model.
+ * @param onSubmit The handler function to submit the form which takes a partial `Model` object
+ */
 const ModelForm = ({ onSubmit }: { onSubmit: (model: Partial<Model>) => Promise<void> }) => {
   const [formState, setFormState] = useState<Partial<Model>>({});
 
@@ -137,6 +150,9 @@ const ModelForm = ({ onSubmit }: { onSubmit: (model: Partial<Model>) => Promise<
   );
 };
 
+/**
+ * A component to manage models.
+ */
 export const ModelDashboard = () => {
   const discoveryApi = useApi(discoveryApiRef);
   const { fetch } = useApi(fetchApiRef);
@@ -152,6 +168,10 @@ export const ModelDashboard = () => {
     return response.json();
   }, []);
 
+  /**
+   * Handler function to submit the form and add a new model (takes a partial `Model` object).
+   * @param model The partial `Model` object to add
+   */
   const handleFormSubmit = async (model: Partial<Model>) => {
     try {
       const user = await identityApi.getBackstageIdentity();

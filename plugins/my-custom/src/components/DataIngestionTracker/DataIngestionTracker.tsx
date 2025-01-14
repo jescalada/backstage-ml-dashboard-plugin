@@ -13,33 +13,22 @@ import TextField from '@material-ui/core/TextField';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import { useTableStyles } from '../../styles/useTableStyles';
+import { DataIngestionJob, JobStatus, JobTableProps } from './types';
 
-type DataIngestionJob = {
-  id: string;
-  data_source_uri: string;
-  status: string;
-  created_at: string;
-  completed_at: string | null;
-};
-
-enum JobStatus {
-  PENDING = 'Pending',
-  IN_PROGRESS = 'In Progress',
-  COMPLETED = 'Completed',
-  FAILED = 'Failed',
-}
-
-type JobTableProps = {
-  jobs: DataIngestionJob[];
-  handleJobStatusSwitch: (jobId: string, status: JobStatus) => void;
-}
-
+/**
+ * A utility function to format an ISO string to a human-readable date.
+ * @param isoString The ISO string to format
+ */
 const formatDate = (isoString: string) => {
   if (!isoString) return '-';
   const date = new Date(isoString);
   return date.toLocaleString();
 };
 
+/**
+ * A badge component to display the status of a data ingestion job.
+ * @param status The status of the job
+ */
 const StatusBadge = ({ status }: { status: string }) => {
   const classes = useTableStyles();
 
@@ -62,6 +51,8 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 /**
  * A set of action buttons to switch the status of a job, hidden behind a "three-dot" menu.
+ * @param jobId The ID of the job to switch status
+ * @param switchHandler The handler function to switch the status of a job
  */
 const StatusSwitchButtons = ({
   jobId,
@@ -127,6 +118,11 @@ const StatusSwitchButtons = ({
   );
 };
 
+/**
+ * A table component to display data ingestion jobs.
+ * @param jobs The list of data ingestion jobs to display
+ * @param handleJobStatusSwitch The handler function to switch the status of a job
+ */
 const JobTable = ({ jobs, handleJobStatusSwitch }: JobTableProps) => {
   const columns: TableColumn<DataIngestionJob>[] = [
     { title: 'Data Source URI', field: 'data_source_uri', width: '25%' },
@@ -153,6 +149,10 @@ const JobTable = ({ jobs, handleJobStatusSwitch }: JobTableProps) => {
   );
 };
 
+/**
+ * A form component to add a new data ingestion job.
+ * @param onSubmit The handler function to submit the form which takes a partial `DataIngestionJob` object
+ */
 const ModelForm = ({ onSubmit }: { onSubmit: (model: Partial<DataIngestionJob>) => Promise<void> }) => {
   const [formState, setFormState] = useState<Partial<DataIngestionJob>>({});
 
@@ -200,6 +200,9 @@ const ModelForm = ({ onSubmit }: { onSubmit: (model: Partial<DataIngestionJob>) 
   );
 };
 
+/**
+ * A component to track data ingestion jobs.
+ */
 export const DataIngestionTracker = () => {
   const discoveryApi = useApi(discoveryApiRef);
   const { fetch } = useApi(fetchApiRef);
@@ -216,6 +219,11 @@ export const DataIngestionTracker = () => {
     return fetchedJobs;
   }, []);
 
+  /**
+   * Handler function to submit the form and add a new data ingestion job.
+   * @param job The partial `DataIngestionJob` object to add
+   * @error relay error to `alertApi` if failed
+   */
   const handleFormSubmit = async (job: Partial<DataIngestionJob>) => {
     try {
       const url = `${await discoveryApi.getBaseUrl('my-custom')}/jobs/add`;
@@ -235,6 +243,11 @@ export const DataIngestionTracker = () => {
     }
   };
 
+  /**
+   * Handler function to switch the status of a data ingestion job.
+   * @param jobId The ID of the job to switch status
+   * @param status The new status to switch to
+   */
   const handleJobStatusSwitch = async (jobId: string, status: JobStatus) => {
     const statusToEndpointMap: Record<JobStatus, string> = {
       [JobStatus.PENDING]: 'pending',
