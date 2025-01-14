@@ -38,6 +38,7 @@ import { RequirePermission } from '@backstage/plugin-permission-react';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 import { MyCustomPage } from '@internal/backstage-plugin-my-custom';
 import { githubAuthApiRef, googleAuthApiRef } from '@backstage/core-plugin-api';
+import { ArgoDashboardPage } from '@internal/backstage-plugin-my-custom';
 
 const app = createApp({
   apis,
@@ -116,6 +117,7 @@ const routes = (
     <Route path="/settings" element={<UserSettingsPage />} />
     <Route path="/catalog-graph" element={<CatalogGraphPage />} />
     <Route path="/my-custom" element={<MyCustomPage />} />
+    <Route path="/my-custom/argo" element={<ArgoDashboardPage />} />
   </FlatRoutes>
 );
 

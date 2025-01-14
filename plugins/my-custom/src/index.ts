@@ -1,1 +1,1 @@
-export { myCustomPlugin, MyCustomPage } from './plugin';
+export { ArgoDashboardPage, myCustomPlugin, MyCustomPage } from './plugin';

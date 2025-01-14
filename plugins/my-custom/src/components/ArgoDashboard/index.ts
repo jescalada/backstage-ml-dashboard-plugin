@@ -1,1 +1,1 @@
-export { ArgoAppFetcher } from './ArgoDashboard';
+export { ArgoDashboardPage } from './ArgoDashboardPage';
